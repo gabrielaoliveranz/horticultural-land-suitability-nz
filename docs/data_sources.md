@@ -80,6 +80,14 @@ When both a spatial extent and an attribute filter are needed, fold the
 bbox into the CQL as `BBOX(field, minx, miny, maxx, maxy, 'CRS84')` —
 the CRS argument is required, or the query silently returns zero rows.
 
+**Technical note (CRS mismatch):** LINZ and LRIS WFS responses default to
+their source CRS, not WGS84 — LINZ returns EPSG:4167 (NZGD2000), LRIS/S-map/
+LCDB return EPSG:2193 (NZTM2000, metres). Mixing these with WGS84 geometry
+(e.g. centroids) causes spatial joins to silently return 0% matches, not an
+error. Fix: always request `srsName=urn:ogc:def:crs:EPSG::4326` explicitly
+in the WFS request, and verify against the response's own declared `crs`
+field rather than assuming.
+
 ---
 
 ## 3. NIWA / Open-Meteo (Climate) — DECISION: Open-Meteo only, NIWA dropped
