@@ -68,6 +68,10 @@ def fetch_all_features(base_url, layer_id, cql_filter, page_size=PAGE_SIZE):
             "cql_filter": cql_filter,
             "count": page_size,
             "startIndex": start_index,
+            # This WFS's native/declared CRS is EPSG:4167 (NZGD2000), not
+            # WGS84 — request explicit reprojection so the output is truly
+            # EPSG:4326, matching the crs we label the GeoDataFrame with.
+            "srsName": "urn:ogc:def:crs:EPSG::4326",
         }
         response = requests.get(base_url, params=params, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
