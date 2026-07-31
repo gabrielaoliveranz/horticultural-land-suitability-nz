@@ -1,0 +1,7 @@
+# Terroir — dependencies
+# Streamlit is the confirmed dashboard tool (see docs/methodology.md)
+# and will be added here once dashboard development begins.
+
+requests
+python-dotenv
+geopandas

@@ -1,0 +1,35 @@
+# Terroir
+
+Geospatial land suitability analysis for Bay of Plenty horticulture — the
+sister project to Apophenia™ (Gabriela Olivera's kiwifruit export risk
+simulator, already deployed).
+
+## Objective
+
+Analyse soil suitability and territorial risk at subzone level for Bay of
+Plenty horticulture, combining cadastral, soil, and climate data. Where
+Apophenia models regional climate-logistics risk, Terroir focuses on
+land-level suitability — the aim is to demonstrate genuine geospatial
+analysis (real shapefiles/GeoJSON, not standalone lat/long pairs), work
+across multiple public New Zealand data sources, and produce business
+insight applicable to horticulture and council GIS/asset-management roles.
+
+## Stack
+
+- **Dashboard:** Streamlit (decision documented in `docs/methodology.md`)
+- **Geospatial processing:** Python (geopandas and related tooling), SQL
+- **Data sources:** LINZ Data Service, S-map (Manaaki Whenua / Landcare
+  Research), and Open-Meteo for climate (NIWA was evaluated and dropped
+  in favour of Open-Meteo — see `docs/data_sources.md`)
+
+## Status
+
+Fase 0 (data source investigation) and Fase 1 (business questions) are
+complete — see `docs/data_sources.md` and `docs/business_questions.md`.
+Fase 2 (data ingestion) has not started: no data has been downloaded,
+and no notebooks, SQL, source code, dashboard, or case study content
+exist yet.
+
+## How to run
+
+To be documented once the data pipeline and Streamlit app exist.
