@@ -75,4 +75,21 @@ exactly the candidate that question needs to surface, not discard.
 
 ## Scoring model
 
-To be populated in Fase 3, once weightings and reasoning are defined.
+The full scoring model (weightings and reasoning) is defined in Fase 3.
+The following rule is fixed now, ahead of that, because it depends on
+ingestion results already in hand rather than on scoring weights.
+
+### Handling unmatched parcels (nulls)
+
+113 of 14,265 parcels (0.8%) have no S-map match (soil_depth, soil_texture,
+soil_drainage, soil_order all null); 37 (0.3%) have no LCDB match. These
+parcels fall outside S-map's/LCDB's mapped coverage — typically coastal
+edge cases, not a data quality error (see docs/data_sources.md ingestion
+notes).
+
+Decision: parcels with any null soil attribute are excluded from the
+suitability score entirely, not assigned a default/imputed value.
+Inventing a soil value for a parcel with no real data would undermine the
+credibility of the score for every parcel, not just the affected ones.
+These excluded parcels are reported separately (count + list) rather than
+silently dropped, so the case study can state coverage honestly.
