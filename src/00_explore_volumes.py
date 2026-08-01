@@ -4,6 +4,9 @@
 # Stage:  Ingestion (pre-Fase 2 exploration)
 # Author: Gabriela Olivera | Data Analytics Portfolio
 # =============================================================================
+# NOTE: reflects the original 3-TA exploration done during Fase 2 planning —
+# kept as historical record, not updated when Whakatane District was added
+# as a 4th TA; do not read its numbers as current.
 """
 One-off exploration script. NOT the ingestion pipeline.
 

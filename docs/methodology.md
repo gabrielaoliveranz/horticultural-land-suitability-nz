@@ -166,6 +166,19 @@ since candidates are a subset of the Excellent tier. Fixed by binning
 with `right=False` instead, which correctly makes both the 5.0 and 8.0
 boundaries left-inclusive. All figures in this document are post-fix.
 
+**Final figures (4 TAs, post boundary-fix), region-wide, 21,491 scored
+parcels:**
+
+| Level | Parcels | % |
+|---|---|---|
+| Excellent | 16,414 | 76.4% |
+| Good | 3,889 | 18.1% |
+| Marginal | 1,188 | 5.5% |
+
+(Full detail, including the 5-named-subzone view and its 88.8%
+weighted-average Excellent share, is in "Regional summary and expansion
+candidates" below.)
+
 **Future refinement (not implemented):** once climate risk data (frost,
 heavy rainfall) is ingested, it could serve as a tiebreaker within the
 "Excellent" tier — parcels tied on soil suitability but with lower
