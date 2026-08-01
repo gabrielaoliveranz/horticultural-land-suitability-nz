@@ -15,6 +15,16 @@ Summary numbers only, no map (that's 2_Suitability_Map.py) and no
 5-named-subzone breakdown (that's a future addition — subzone_summary
 covers it). Functional, minimal styling for now; full polish is a later
 pass, same as 0_Intro.py's.
+
+Robustness note: load_overview_data() reindexes onto LEVEL_ORDER instead
+of using .loc[LEVEL_ORDER] directly. All 3 levels currently have
+parcels, so this isn't reachable today, but suitability_levels_summary
+is a GROUP BY — if any level ever had zero parcels, its row simply
+wouldn't exist in the query result, and .loc[] on a missing index label
+raises KeyError (an unguarded raw traceback, not a handled empty
+state). reindex(..., fill_value=0) is the same-shaped fix as the
+empty-state guards on the map pages: assume the data can legitimately
+be missing a category, and degrade to a visible 0 rather than crash.
 """
 
 import sqlite3
@@ -33,7 +43,7 @@ def load_overview_data():
         levels = pd.read_sql("SELECT * FROM suitability_levels_summary", conn)
         n_scored = pd.read_sql("SELECT COUNT(*) AS n FROM parcel_scores", conn).iloc[0, 0]
         n_ingested = pd.read_sql("SELECT COUNT(*) AS n FROM parcel_attributes", conn).iloc[0, 0]
-    levels = levels.set_index("suitability_level").loc[LEVEL_ORDER].reset_index()
+    levels = levels.set_index("suitability_level").reindex(LEVEL_ORDER, fill_value=0).reset_index()
     return levels, int(n_scored), int(n_ingested)
 
 

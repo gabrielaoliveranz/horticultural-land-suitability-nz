@@ -114,6 +114,16 @@ def load_candidate_data():
 
     merged = parcels.merge(candidates, on="source_id", how="inner")
     merged["fill_color"] = merged["lcdb_class_2023"].map(LCDB_COLORS)
+    # LCDB_COLORS is a hardcoded list confirmed live against the data at
+    # build time (see module docstring). If a future data refresh ever
+    # introduces a class not in that list, .map() leaves fill_color as
+    # NaN for those rows — pydeck would receive a null color property
+    # rather than a clean crash, so this is a real missing-value edge
+    # case, not a hypothetical one. Fall back to a neutral grey instead
+    # of leaving it unresolved.
+    unmapped = merged["fill_color"].isna()
+    if unmapped.any():
+        merged.loc[unmapped, "fill_color"] = [[120, 120, 120, 200]] * unmapped.sum()
     return merged
 
 

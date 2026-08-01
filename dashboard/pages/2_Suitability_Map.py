@@ -93,6 +93,14 @@ docs/methodology.md's full reasoning, not a copy of it.
 A spinner ("Loading map...") wraps only the data load + pydeck render —
 the title, caption, and subzone selectbox above it stay instant/
 interactive regardless of load time.
+
+Empty-state guard: this page had the same latent bug that crashed
+Expansion Candidates ("Invalid LngLat object: (NaN, NaN)") — a subzone
+filter yielding zero rows would send GeoDataFrame.total_bounds()'s
+all-NaN result straight into pydeck.ViewState. Every named subzone
+currently has scored parcels, so this was never triggered here, but
+it's the identical code pattern, so it gets the identical fix: an
+`if len(view) == 0` branch with st.info() instead of building the map.
 """
 
 import sqlite3
@@ -192,51 +200,58 @@ with st.spinner("Loading map..."):
 
     st.caption(f"Showing {len(view):,} of {len(all_parcels):,} scored parcels.")
 
-    bounds = view.total_bounds  # minx, miny, maxx, maxy
-    view_state = pydeck.ViewState(
-        longitude=(bounds[0] + bounds[2]) / 2,
-        latitude=(bounds[1] + bounds[3]) / 2,
-        zoom=12 if subzone != "All" else 9,
-    )
+    if len(view) == 0:
+        # Same latent bug class as Expansion Candidates — see module
+        # docstring's "Empty-state guard" note. Every named subzone
+        # currently has scored parcels, so this isn't reachable today,
+        # but it gets the same guard rather than relying on that.
+        st.info(f"No scored parcels found for “{subzone}”.")
+    else:
+        bounds = view.total_bounds  # minx, miny, maxx, maxy
+        view_state = pydeck.ViewState(
+            longitude=(bounds[0] + bounds[2]) / 2,
+            latitude=(bounds[1] + bounds[3]) / 2,
+            zoom=12 if subzone != "All" else 9,
+        )
 
-    layer = pydeck.Layer(
-        "GeoJsonLayer",
-        data=to_geojson(view),
-        get_fill_color="properties.fill_color",
-        get_line_color=[255, 255, 255, 60],
-        get_line_width="properties.line_width",
-        # pydeck's Layer treats any plain string kwarg as a deck.gl
-        # JS expression (prefixing it with "@@="), which broke this:
-        # "pixels" became the expression `pixels` (undefined),
-        # throwing during Deck construction and blanking the whole
-        # map, not just this one prop (confirmed via l.to_json() —
-        # "lineWidthUnits": "@@=pixels" — before this fix). Wrapping
-        # in explicit quote characters is pydeck's documented escape
-        # hatch (bindings/layer.py's QUOTE_CHARS check) for a literal
-        # string value instead of an expression.
-        line_width_units="'pixels'",
-        line_width_min_pixels=0.5,
-        stroked=True,
-        filled=True,
-        pickable=True,
-        auto_highlight=True,
-    )
+        layer = pydeck.Layer(
+            "GeoJsonLayer",
+            data=to_geojson(view),
+            get_fill_color="properties.fill_color",
+            get_line_color=[255, 255, 255, 60],
+            get_line_width="properties.line_width",
+            # pydeck's Layer treats any plain string kwarg as a deck.gl
+            # JS expression (prefixing it with "@@="), which broke this:
+            # "pixels" became the expression `pixels` (undefined),
+            # throwing during Deck construction and blanking the whole
+            # map, not just this one prop (confirmed via l.to_json() —
+            # "lineWidthUnits": "@@=pixels" — before this fix). Wrapping
+            # in explicit quote characters is pydeck's documented escape
+            # hatch (bindings/layer.py's QUOTE_CHARS check) for a literal
+            # string value instead of an expression.
+            line_width_units="'pixels'",
+            line_width_min_pixels=0.5,
+            stroked=True,
+            filled=True,
+            pickable=True,
+            auto_highlight=True,
+        )
 
-    deck = pydeck.Deck(
-        layers=[layer],
-        initial_view_state=view_state,
-        tooltip={
-            # Two independent {field} placeholders in one line — deck.gl
-            # substitutes each property separately, no precomputed "display"
-            # column needed to get "6.0 (Good)".
-            "html": "<b>Parcel:</b> {parcel_id}<br/>"
-                    "<b>Score:</b> {suitability_score} ({suitability_level})<br/>"
-                    "<b>Subzone:</b> {subzone}",
-            "style": {"backgroundColor": "#0B4F3D", "color": "white"},
-        },
-    )
+        deck = pydeck.Deck(
+            layers=[layer],
+            initial_view_state=view_state,
+            tooltip={
+                # Two independent {field} placeholders in one line — deck.gl
+                # substitutes each property separately, no precomputed "display"
+                # column needed to get "6.0 (Good)".
+                "html": "<b>Parcel:</b> {parcel_id}<br/>"
+                        "<b>Score:</b> {suitability_score} ({suitability_level})<br/>"
+                        "<b>Subzone:</b> {subzone}",
+                "style": {"backgroundColor": "#0B4F3D", "color": "white"},
+            },
+        )
 
-    st.pydeck_chart(deck, height=600)
+        st.pydeck_chart(deck, height=600)
 
 # Legend — pydeck has no native in-map legend, so this is a plain
 # colour-key row underneath, built from the same LEVEL_COLORS /
