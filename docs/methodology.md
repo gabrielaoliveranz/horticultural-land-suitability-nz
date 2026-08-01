@@ -88,9 +88,68 @@ exactly the candidate that question needs to surface, not discard.
 
 ## Scoring model
 
-The full scoring model (weightings and reasoning) is defined in Fase 3.
-The following rule is fixed now, ahead of that, because it depends on
-ingestion results already in hand rather than on scoring weights.
+### Point tables
+
+**soil_order** (0-10):
+Allophanic 10, Pumice 10, Brown 6, Recent 6, Anthropic 5, Raw 4, Podzol 3, Gley 2, Organic 1
+
+**soil_texture** (0-10):
+Loamy 10, Silty 7, Sandy 5, Clayey 2, Peaty 1
+
+**soil_drainage** (0-10):
+Well drained 10, Moderately well drained 8, Imperfectly drained 5, Poorly drained 2, Very poorly drained 0
+
+**soil_depth** (0-10):
+Deep 10, Moderately Deep 6, Shallow 3, Very Shallow 1
+
+Point values are based on kiwifruit soil requirement research (NZKGI,
+Te Ara Encyclopedia, general agronomic sources — see chat history for
+citations), not derived from the source data itself.
+
+### Weights
+
+score = (soil_order × 0.4) + (soil_texture × 0.4) + (soil_drainage × 0.1) + (soil_depth × 0.1)
+
+Weight rationale: soil_order and soil_texture show high variation across
+the 17,400 parcels (soil_order ranges from 62% Allophanic down to single
+digits for several categories; soil_texture is 72% Loamy down to <1%
+Clayey), making them meaningful differentiators. soil_drainage and
+soil_depth are heavily skewed (>90% "Well drained", >96% "Deep"),
+providing little differentiating signal across most parcels.
+
+**Important caveat:** the 80/20 split between the two factor pairs is a
+reasoned design decision based on observed variation, not a formal
+statistical weighting method (e.g. inverse-variance weighting). Within
+each pair, weights are split evenly (0.4/0.4 and 0.1/0.1) since no strong
+evidence favours one factor over its pair partner. This is documented as
+an assumption, not a calculated result — a defensible design choice, open
+to revision as a future refinement.
+
+### Score distribution and suitability levels
+
+The scoring formula produces a heavily right-skewed distribution: 59.1%
+of scored parcels (9,720 of 16,447) score exactly 10.0. This reflects the
+underlying geology of Bay of Plenty (soil_order ~81% Allophanic/Pumice,
+soil_texture ~72% Loamy, soil_drainage >90% Well drained, soil_depth >96%
+Deep) rather than a modelling error — most parcels stack every factor at
+its maximum.
+
+**Consequence for business question 1:** a forced top-N ranking is
+uninformative when 59% of parcels tie for first place. Instead, parcels
+are grouped into suitability levels:
+
+- Excellent: 8.0-10.0
+- Good: 5.0-7.9
+- Marginal: <5.0
+
+Business question 1 is answered by reporting the % of parcels per level
+and their geographic concentration by subzone, not a single ranked list.
+
+**Future refinement (not implemented):** once climate risk data (frost,
+heavy rainfall) is ingested, it could serve as a tiebreaker within the
+"Excellent" tier — parcels tied on soil suitability but with lower
+climate risk would rank higher. Documented here as a known next step,
+not built into the current score.
 
 ### Handling unmatched parcels (nulls)
 
