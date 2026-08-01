@@ -2,6 +2,8 @@
 __pycache__/
 *.pyc
 .venv/
+.claude/settings.local.json
+node_modules/
 
 data/processed/*
 data/raw/*/*
