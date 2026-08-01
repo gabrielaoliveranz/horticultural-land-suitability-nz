@@ -283,7 +283,7 @@ the 5 shared subzones.
 
 **Result:** mean_score correlates negatively with psa_incidence_historical
 (r = -0.86) and with distance_port_km (r = -0.55), and is essentially
-uncorrelated with base_risk_weight (r = 0.18). Read at face value, this
+uncorrelated with base_risk_weight (r = 0.17). Read at face value, this
 would suggest operational risk in Apophenia's model is more logistical
 (distance, historical incidents) than agronomic (soil suitability) — the
 subzones with the best soil scores are not obviously the ones Apophenia
