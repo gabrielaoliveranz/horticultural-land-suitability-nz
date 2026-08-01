@@ -169,3 +169,42 @@ Inventing a soil value for a parcel with no real data would undermine the
 credibility of the score for every parcel, not just the affected ones.
 These excluded parcels are reported separately (count + list) rather than
 silently dropped, so the case study can state coverage honestly.
+
+---
+
+### Cross-project comparison (business question 3)
+
+Business question 3 asks whether Apophenia's high operational risk
+corridors (e.g. the Ōpōtiki-Tauranga corridor, 23% late) correlate with
+low soil suitability, or whether the risk is primarily logistical rather
+than agronomic.
+
+**Method:** `src/06_cross_project_comparison.py` joins Terroir's
+`subzone_summary` (mean_score per subzone, from real S-map/LCDB-derived
+scoring) against `data/external/dim_corridor_apophenia.csv` (Apophenia's
+per-corridor risk indicators) on subzone name, then computes the Pearson
+correlation between mean_score and each of Apophenia's 3 risk indicators
+(distance_port_km, base_risk_weight, psa_incidence_historical) across
+the 5 shared subzones.
+
+**Result:** mean_score correlates negatively with psa_incidence_historical
+(r = -0.86) and with distance_port_km (r = -0.55), and is essentially
+uncorrelated with base_risk_weight (r = 0.18). Read at face value, this
+would suggest operational risk in Apophenia's model is more logistical
+(distance, historical incidents) than agronomic (soil suitability) — the
+subzones with the best soil scores are not obviously the ones Apophenia
+flags as highest-risk.
+
+**Critical caveat — real vs. synthetic data:** `dim_corridor_apophenia.csv`
+is Apophenia's illustrative/synthetic dataset, not measured operational
+data (e.g. actual freight volumes, real incident logs). Terroir's
+mean_score, by contrast, is derived from real LINZ/S-map/LCDB data. This
+correlation is therefore a demonstration of cross-project analytical
+technique — joining and comparing two related portfolio projects — not a
+validated business finding. It should not be presented as evidence that
+real kiwifruit logistics risk in Bay of Plenty is agronomic vs.
+logistical in origin. Any case-study write-up of this result must state
+this caveat alongside the numbers, not only in supporting narrative.
+Also worth noting: n=5 (one row per subzone) is far too small for the
+correlation coefficients above to carry statistical weight on their own,
+independent of the synthetic-data caveat.

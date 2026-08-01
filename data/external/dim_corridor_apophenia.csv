@@ -1,0 +1,6 @@
+corridor_key,subzone,highway,distance_port_km,congestion_index_avg,base_risk_weight,psa_incidence_historical
+1,Te Puke,SH2,28,91.8,0.35,0.18
+2,Katikati,SH2,52,91.8,0.2,0.09
+3,Tauranga,SH2,12,91.8,0.18,0.12
+4,Pongakawa,SH2,35,91.8,0.15,0.14
+5,Opotiki,SH2,97,91.8,0.12,0.22
