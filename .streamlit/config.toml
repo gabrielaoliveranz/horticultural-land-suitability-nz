@@ -1,0 +1,38 @@
+# Terroir dashboard theme.
+#
+# Only the 5 colours confirmed in PRODUCT.md's "Brand Commitments" are
+# set here. textColor and font family are deliberately left at
+# Streamlit's defaults — neither was confirmed, and inventing them here
+# would be an unrequested brand decision. See docs/methodology.md's
+# "Dashboard tool: Streamlit" for why Streamlit was chosen at all.
+#
+# Contrast checked against backgroundColor (WCAG): primary green
+# 7.76:1 (passes body text, >=4.5:1). Lima green (1.54:1) and SunGold
+# gold (1.63:1) both fail as text/foreground colours on this background
+# — reserve them for fills, badges, or chart series, never body text.
+
+[theme]
+primaryColor = "#0B4F3D"           # primary green — buttons, links, active elements
+linkColor = "#0B4F3D"              # explicit — did not reliably inherit from
+                                     # primaryColor for markdown links / st.page_link
+                                     # in testing (both rendered browser-default
+                                     # blue #0000EE without this)
+backgroundColor = "#E8E8E3"        # confirmed background
+secondaryBackgroundColor = "#E8E8E3"  # same value, deliberately: only one
+                                        # background hex was confirmed, and a
+                                        # flat single-tone background matches
+                                        # the "typography as primary device,
+                                        # not decoration" brief better than
+                                        # inventing an unconfirmed second shade
+
+greenColor = "#0B4F3D"
+orangeColor = "#F2A900"            # SunGold gold mapped to the closest semantic slot
+redColor = "#C0392B"               # alert red
+
+chartCategoricalColors = ["#0B4F3D", "#A8C93A", "#F2A900", "#C0392B", "#57606A"]
+
+[theme.sidebar]
+backgroundColor = "#E8E8E3"        # sidebar doesn't inherit the top-level
+                                     # backgroundColor automatically — must
+                                     # be set explicitly or it falls back to
+                                     # Streamlit's default #F0F2F6
