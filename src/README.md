@@ -5,7 +5,7 @@ geospatial utilities.
 
 ## Status
 
-Five scripts so far, all following the Python header standard in
+Eight scripts so far, all following the Python header standard in
 `docs/conventions.md`:
 
 - `00_explore_volumes.py` — exploratory, not the ingestion pipeline. No
@@ -35,5 +35,24 @@ Five scripts so far, all following the Python header standard in
   `docs/methodology.md` ("Point tables", "Weights"), saving the result as
   a new `parcel_scores` table (keyed on source_id) in
   `data/processed/terroir.db` — 16,447 parcels scored.
+- `05_subzone_summary.py` — scoring. Joins `parcel_scores` with
+  `parcel_attributes.subzone`, filters to the 5 named subzones (4,100
+  parcels), and computes parcel count, mean score, and %
+  Excellent/Good/Marginal per subzone, saved as `subzone_summary`.
+- `06_cross_project_comparison.py` — scoring. Joins `subzone_summary`
+  against Apophenia's `data/external/dim_corridor_apophenia.csv` on
+  subzone name and correlates mean_score with Apophenia's 3 risk
+  indicators, saved as `cross_project_comparison` — see
+  `docs/methodology.md` ("Cross-project comparison (business question
+  3)") for the real-vs-synthetic caveat this result is subject to.
+- `07_ingest_climate_risk.py` — production ingestion. Computes one
+  representative point per subzone (average parcel centroid) and calls
+  the Open-Meteo Historical Weather API (2016-2025) for each, saving
+  frost days, chill hours, and heavy rain days (raw 10-year totals plus
+  per-year figures) as `subzone_climate_risk` — see
+  `docs/methodology.md` ("Climate risk ingestion (business question
+  5)").
 
-Climate (Open-Meteo) ingestion is still to be added.
+All ingestion, joining, scoring, and cross-project comparison work for
+Fase 2/3 is now in place. Fase 4 (insights) and Fase 5 (Streamlit
+dashboard) are still to be started.

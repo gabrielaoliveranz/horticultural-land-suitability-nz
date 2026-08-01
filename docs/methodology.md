@@ -208,3 +208,45 @@ this caveat alongside the numbers, not only in supporting narrative.
 Also worth noting: n=5 (one row per subzone) is far too small for the
 correlation coefficients above to carry statistical weight on their own,
 independent of the synthetic-data caveat.
+
+---
+
+## Climate risk ingestion (business question 5)
+
+**Representative point per subzone:** rather than querying weather data
+per parcel (17,400 API calls), each subzone is reduced to a single
+representative point — the average centroid of every parcel assigned
+that subzone (subzone IS NOT NULL, same assignment as
+`03_ingest_subzones.py`). Centroids are averaged in a projected CRS
+(NZTM2000, EPSG:2193) for accuracy, then the single averaged point is
+converted back to WGS84 for the Open-Meteo API call. This trades
+per-parcel precision for a tractable 5-call ingestion — acceptable given
+Bay of Plenty's climate varies gradually across a subzone's extent
+compared to the sharp parcel-to-parcel differences seen in soil data.
+
+**Source and window:** Open-Meteo Historical Weather API (ERA5
+reanalysis archive), hourly `temperature_2m` and `precipitation`,
+2016-01-01 to 2025-12-31 (10 full years, local NZ timezone). Ten years
+was chosen as long enough to average out year-to-year extremes (a single
+unusually cold or wet year skewing a subzone's risk profile) while
+staying within Open-Meteo's straightforward free-tier archive access —
+no account or API key required, same as documented in
+`docs/data_sources.md`.
+
+**Metrics (`subzone_climate_risk` table, all on an annual basis):**
+
+- **Frost days/year** — days where the daily minimum hourly temperature
+  is below 0°C, averaged over the 10-year window.
+- **Chill hours/year** — hours below 7°C during May-August (the kiwifruit
+  dormancy window), averaged over the 10-year window.
+- **Heavy rain days/year** — days where total daily precipitation exceeds
+  25mm, averaged over the 10-year window.
+
+Raw 10-year totals are kept alongside each per-year figure (e.g.
+`frost_days` next to `frost_days_per_year`) for context — the totals are
+easier to sanity-check against a specific historical event, while the
+per-year figures are what any future scoring extension would use, since
+they put all 3 climate metrics on the same basis as each other.
+
+Not yet incorporated into `suitability_score` — see "Future refinement
+(not implemented)" under Score distribution above.
