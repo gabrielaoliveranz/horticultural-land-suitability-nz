@@ -151,6 +151,40 @@ heavy rainfall) is ingested, it could serve as a tiebreaker within the
 climate risk would rank higher. Documented here as a known next step,
 not built into the current score.
 
+### Regional summary and expansion candidates (business questions 1 and 2)
+
+`src/08_regional_summary_expansion.py` extends the suitability-level
+breakdown above to the full dataset (not just parcels within Apophenia's
+5 named subzones — that narrower view is `subzone_summary`, from
+`05_subzone_summary.py`) and answers business question 2.
+
+**Business question 1, region-wide (`suitability_levels_summary`):** of
+16,447 scored parcels — Excellent 11,358 (69.1%), Good 4,464 (27.1%),
+Marginal 625 (3.8%). The region-wide picture is even more skewed toward
+"Excellent" than the 5-named-subzone view, consistent with the skew
+already documented above.
+
+**Business question 2, expansion candidates (`expansion_candidates`):**
+parcels with `suitability_score >= 8.0` (Excellent tier) that are NOT
+already classified as `lcdb_class_2023 = 'Orchard, Vineyard or Other
+Perennial Crop'` — good-to-excellent soil with no current orchard/
+vineyard/perennial-crop use, i.e. real expansion candidates rather than
+existing orchards. Result: **10,224 parcels** (90.0% of all 11,358
+Excellent-tier parcels) — most excellent-soil land in the region is not
+currently under orchard/vineyard/perennial-crop use, which tracks with
+LCDB's own region-wide finding that only ~3% of land cover falls in that
+class (see "Parcel selection" above). Breakdown by subzone: 7,392 fall
+outside the 5 named subzones, then Tauranga 1,972, Te Puke 407,
+Pongakawa 247, Katikati 166, Opotiki 40.
+
+Parcels with a NULL `lcdb_class_2023` (57 of 17,400 overall — no LCDB
+match) are included as candidates, not excluded: they are not confirmed
+orchard, and excluding them would silently drop otherwise-qualifying
+parcels because of an LCDB coverage gap rather than because they're
+actually disqualified. `expansion_candidates` stores `source_id` only
+(no geometry) — geometry for mapping is looked up from
+`parcels_linz.geojson` via that key when needed.
+
 ### Handling unmatched parcels (nulls)
 
 953 of 17,400 parcels (5.5%) have no S-map match (soil_depth, soil_texture,

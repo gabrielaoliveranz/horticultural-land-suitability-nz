@@ -5,7 +5,7 @@ geospatial utilities.
 
 ## Status
 
-Eight scripts so far, all following the Python header standard in
+Nine scripts so far, all following the Python header standard in
 `docs/conventions.md`:
 
 - `00_explore_volumes.py` — exploratory, not the ingestion pipeline. No
@@ -52,6 +52,15 @@ Eight scripts so far, all following the Python header standard in
   per-year figures) as `subzone_climate_risk` — see
   `docs/methodology.md` ("Climate risk ingestion (business question
   5)").
+- `08_regional_summary_expansion.py` — scoring. Two parts: (1) groups all
+  16,447 scored parcels into suitability levels region-wide (not just
+  the 5 named subzones) — Excellent 69.1%, Good 27.1%, Marginal 3.8% —
+  saved as `suitability_levels_summary`; (2) filters to
+  suitability_score >= 8.0 AND not already LCDB-classified as orchard/
+  vineyard/perennial crop, saved as `expansion_candidates` — 10,224
+  parcels (90.0% of the Excellent tier). See `docs/methodology.md`
+  ("Regional summary and expansion candidates (business questions 1 and
+  2)").
 
 All ingestion, joining, scoring, and cross-project comparison work for
 Fase 2/3 is now in place. Fase 4 (insights) and Fase 5 (Streamlit
