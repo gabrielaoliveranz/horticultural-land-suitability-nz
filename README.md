@@ -26,10 +26,12 @@ insight applicable to horticulture and council GIS/asset-management roles.
 
 Fase 0 (data source investigation) and Fase 1 (business questions) are
 complete — see `docs/data_sources.md` and `docs/business_questions.md`.
-Fase 2 (data ingestion) is functionally complete for parcels + soil +
-LCDB + subzones: 17,400 LINZ parcels across all 3 target TAs (Tauranga
-City, Western Bay of Plenty District, Ōpōtiki District — 1 ha area
-threshold) joined to S-map, LCDB, and Apophenia-subzone attributes — see
+Fase 2 (data ingestion) is complete for parcels + soil + LCDB + subzones:
+17,400 LINZ parcels across all 3 target TAs (Tauranga City, Western Bay
+of Plenty District, Ōpōtiki District — 1 ha area threshold) joined to
+S-map, LCDB, and Apophenia-subzone attributes. Fase 3 (scoring) is now
+implemented: 16,447 parcels scored on a weighted soil suitability
+formula, grouped into Excellent/Good/Marginal levels — see
 `src/README.md` and `docs/methodology.md`. Climate (Open-Meteo)
 ingestion is still to be added. No notebooks, dashboard, or case study
 content exist yet.

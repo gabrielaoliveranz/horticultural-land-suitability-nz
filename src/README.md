@@ -5,7 +5,7 @@ geospatial utilities.
 
 ## Status
 
-Four scripts so far, all following the Python header standard in
+Five scripts so far, all following the Python header standard in
 `docs/conventions.md`:
 
 - `00_explore_volumes.py` — exploratory, not the ingestion pipeline. No
@@ -29,6 +29,11 @@ Four scripts so far, all following the Python header standard in
   Pongakawa, Opotiki), adding a `subzone` column to `parcel_attributes`
   — 23.7% of parcels fall within one of the 5 named subzones, by design
   (see `docs/methodology.md`).
+- `04_calculate_score.py` — scoring. Excludes parcels with any null soil
+  attribute (953 of 17,400), maps soil_order/soil_texture/soil_drainage/
+  soil_depth to points and applies the weighted formula from
+  `docs/methodology.md` ("Point tables", "Weights"), saving the result as
+  a new `parcel_scores` table (keyed on source_id) in
+  `data/processed/terroir.db` — 16,447 parcels scored.
 
-Climate (Open-Meteo) ingestion and the scoring model are still to be
-added.
+Climate (Open-Meteo) ingestion is still to be added.
