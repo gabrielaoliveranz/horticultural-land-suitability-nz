@@ -16,14 +16,63 @@ Only scored parcels are shown (inner join with parcel_scores) — the
 consistent with every other scoring page. Functional, minimal styling
 for now, same as 0_Intro.py / 1_Overview.py.
 
-Level colours are fill colours on a map, not text — per Impeccable's
-contrast findings during 0_Intro.py's polish pass, lima green and
-SunGold gold fail WCAG as *text* on the confirmed background (1.5-1.6:1)
-but that constraint doesn't apply to map fills. Excellent/Good/Marginal
-use primary green / SunGold gold / alert red — a green-gold-red gradient
-reads faster on a map than two greens would (Good uses gold rather than
-lima green for exactly this reason: clearer at-a-glance separation from
-Excellent's green at small parcel sizes).
+Level colours (colorblind-safe fix, replacing the original green/gold/
+red scheme): an Impeccable accessibility audit ran an actual deuteranopia/
+protanopia simulation (via the `colorspacious` library — a real
+simulation, not eyeballed) on the original brand-palette fill colors and
+found a genuine WCAG 1.4.1 failure: under protanopia, Excellent's green
+and Marginal's red simulated to near-identical muddy olive tones (RGB
+distance 31.5, down from 183.2 with normal vision — an 83% collapse).
+That's a real problem specifically for this page, since the map's only
+per-parcel signal is fill hue (the tooltip's text label is a fallback
+that requires hovering each parcel individually, not a substitute for
+at-a-glance scanning).
+
+Replaced with a diverging blue -> amber -> deep-orange scheme (deep blue
+best, deep orange worst — blue and orange sit on the S-cone axis, which
+red-green CVD doesn't affect). Re-verified the same way, on the actual
+alpha-blended-over-background colors (not just the raw fill RGB, since
+that's what a viewer actually sees):
+
+  deuteranomaly: Excellent-Good 217.8, Excellent-Marginal 156.8, Good-Marginal 110.1
+  protanomaly:   Excellent-Good 188.7, Excellent-Marginal 133.7, Good-Marginal 120.6
+
+Worst-case pair distance is now 110.1 vs. the original scheme's 31.5 — a
+~3.5x improvement, and comfortably above the ~50-60 threshold where
+ColorBrewer/Okabe-Ito-style palettes are generally considered reliably
+distinguishable under CVD simulation.
+
+One deliberate finding from verifying rather than assuming: an earlier
+draft of this fix graduated fill *opacity* by level (more opaque for
+better scores) as a second visual channel. Simulating that against this
+page's light background showed it actively hurts discriminability —
+lower opacity washes every color toward the same light grey background,
+pulling Good and Marginal closer together, not further apart (Good-
+Marginal distance dropped to ~63-68 with graduated opacity vs. ~110-120
+with it removed). So opacity is uniform (200) across all three levels,
+same as the original scheme, and the secondary non-color cue is border
+line width instead (thin for Excellent, thicker for Marginal) — doesn't
+touch hue/opacity at all, so it can't undermine the CVD fix, and gives
+WCAG 1.4.1 a genuine second channel beyond color alone.
+
+This is a deliberate, documented deviation from PRODUCT.md's brand
+palette for this one map's data encoding — accessibility on the
+flagship page's primary visual signal outweighs brand-palette
+consistency here. The rest of the app still uses the confirmed brand
+colors; this exception is scoped to LEVEL_COLORS only.
+
+Regression note (caught and fixed before shipping this change): the
+first version of the line-width secondary cue blanked both the map AND
+its basemap entirely — not a color problem, a pydeck one. pydeck's
+Layer class treats any plain string kwarg as a deck.gl JS expression
+(prefixing it with "@@="), so `line_width_units="pixels"` silently
+became the expression `pixels` (undefined), which threw during Deck
+construction and crashed the whole render, not just that one line-width
+prop — confirmed via `layer.to_json()` showing `"lineWidthUnits":
+"@@=pixels"` before the fix. pydeck's own escape hatch for a literal
+string value is wrapping it in quote characters (bindings/layer.py's
+QUOTE_CHARS check), so it's passed as `line_width_units="'pixels'"`
+here, not `"pixels"`.
 
 Geometry note: the "All" view (21,491 parcels) genuinely failed to
 render at full precision — Streamlit's MessageSizeError, "Data of size
@@ -65,10 +114,25 @@ DB_PATH = PROJECT_ROOT / "data" / "processed" / "terroir.db"
 LEVEL_BINS = [-float("inf"), 5.0, 8.0, float("inf")]
 LEVEL_LABELS = ["Marginal", "Good", "Excellent"]
 
+# Colorblind-safe diverging blue -> orange scheme, replacing the
+# original green/gold/red brand colors — see module docstring's "Level
+# colours" note for the verified deuteranopia/protanopia numbers.
 LEVEL_COLORS = {
-    "Excellent": [11, 79, 61, 200],    # primary green
-    "Good": [242, 169, 0, 200],        # SunGold gold
-    "Marginal": [192, 57, 43, 200],    # alert red
+    "Excellent": [0, 63, 145, 200],     # deep blue
+    "Good": [255, 176, 46, 200],        # amber
+    "Marginal": [196, 57, 0, 200],      # deep orange
+}
+
+# Secondary, non-color visual cue (WCAG 1.4.1: color must not be the
+# only signal) — border width in pixels, thin to thick as suitability
+# drops. Deliberately not opacity: graduated opacity was verified to
+# hurt colorblind discriminability against this page's light background
+# (see docstring), so it stays uniform and line width carries the
+# second channel instead.
+LEVEL_LINE_WIDTHS = {
+    "Excellent": 0.5,
+    "Good": 1.0,
+    "Marginal": 2.0,
 }
 
 SUBZONE_OPTIONS = ["All", "Tauranga", "Te Puke", "Pongakawa", "Katikati", "Opotiki"]
@@ -99,11 +163,15 @@ def load_map_data():
         merged["suitability_score"], bins=LEVEL_BINS, labels=LEVEL_LABELS, right=False,
     ).astype(str)
     merged["fill_color"] = merged["suitability_level"].map(LEVEL_COLORS)
+    merged["line_width"] = merged["suitability_level"].map(LEVEL_LINE_WIDTHS)
     return merged
 
 
 def to_geojson(gdf):
-    cols = ["parcel_id", "suitability_score", "subzone", "suitability_level", "fill_color", "geometry"]
+    cols = [
+        "parcel_id", "suitability_score", "subzone", "suitability_level",
+        "fill_color", "line_width", "geometry",
+    ]
     return gdf[cols].__geo_interface__
 
 
@@ -136,6 +204,17 @@ with st.spinner("Loading map..."):
         data=to_geojson(view),
         get_fill_color="properties.fill_color",
         get_line_color=[255, 255, 255, 60],
+        get_line_width="properties.line_width",
+        # pydeck's Layer treats any plain string kwarg as a deck.gl
+        # JS expression (prefixing it with "@@="), which broke this:
+        # "pixels" became the expression `pixels` (undefined),
+        # throwing during Deck construction and blanking the whole
+        # map, not just this one prop (confirmed via l.to_json() —
+        # "lineWidthUnits": "@@=pixels" — before this fix). Wrapping
+        # in explicit quote characters is pydeck's documented escape
+        # hatch (bindings/layer.py's QUOTE_CHARS check) for a literal
+        # string value instead of an expression.
+        line_width_units="'pixels'",
         line_width_min_pixels=0.5,
         stroked=True,
         filled=True,
@@ -160,12 +239,16 @@ with st.spinner("Loading map..."):
     st.pydeck_chart(deck, height=600)
 
 # Legend — pydeck has no native in-map legend, so this is a plain
-# colour-key row underneath, built from the same LEVEL_COLORS dict the
-# map itself uses (single source of truth, can't drift out of sync).
+# colour-key row underneath, built from the same LEVEL_COLORS /
+# LEVEL_LINE_WIDTHS dicts the map itself uses (single source of truth,
+# can't drift out of sync). Swatch border thickness mirrors each
+# level's line_width, so the legend documents both visual channels
+# (color and border), not just color.
 legend_swatches = "".join(
     f'<span style="display:inline-flex; align-items:center; margin-right:1.5rem;">'
     f'<span style="display:inline-block; width:14px; height:14px; border-radius:3px; '
-    f'background:rgb({r},{g},{b}); margin-right:0.4rem;"></span>{level}</span>'
+    f'background:rgb({r},{g},{b}); border:{LEVEL_LINE_WIDTHS[level] * 1.5}px solid rgba(0,0,0,0.45); '
+    f'margin-right:0.4rem;"></span>{level}</span>'
     for level, (r, g, b, _a) in LEVEL_COLORS.items()
 )
 st.html(f'<div style="display:flex; align-items:center; margin-top:0.5rem;">{legend_swatches}</div>')
