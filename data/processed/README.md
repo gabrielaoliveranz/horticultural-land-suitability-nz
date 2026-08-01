@@ -9,26 +9,27 @@ Fase 2 ingestion and Fase 3 scoring complete. Two files generated so far
 (seven tables total in `terroir.db`):
 
 - `parcels_linz.geojson` — `src/01_ingest_linz.py` (LINZ Property
-  Boundaries, all 3 target TAs + 1 ha area filter, 17,400 parcels:
-  Western Bay of Plenty District 11,028, Tauranga City 3,237, Ōpōtiki
-  District 3,135).
+  Boundaries, all 4 target TAs + 1 ha area filter, 22,834 parcels:
+  Western Bay of Plenty District 11,028, Whakatane District 5,434,
+  Tauranga City 3,237, Ōpōtiki District 3,135).
 - `terroir.db` (SQLite), seven tables:
   - `parcel_attributes` — `src/02_ingest_soil_lcdb.py` +
     `src/03_ingest_subzones.py` (keyed on `source_id`, not `parcel_id` —
     see script docstrings): soil_depth, soil_texture, soil_drainage,
-    soil_order (94.5% match), lcdb_class_2023 (99.7% match), and subzone
-    (23.7% match — only parcels within Apophenia's 5 named subzones get
-    one, by design). See `docs/methodology.md`, "Handling unmatched
+    soil_order (94.1% match), lcdb_class_2023 (99.7% match), and subzone
+    (18.0% match — only parcels within Apophenia's 5 named subzones get
+    one, by design; Whakatane District isn't one of them, so it's almost
+    entirely NULL here). See `docs/methodology.md`, "Handling unmatched
     parcels (nulls)".
   - `parcel_scores` — `src/04_calculate_score.py` (keyed on
     `source_id`): suitability_score (0-10) plus the per-factor points
-    and weights it's built from, for 16,447 parcels (the 953 with a
+    and weights it's built from, for 21,491 parcels (the 1,343 with a
     null soil attribute are excluded, not scored). See
     `docs/methodology.md`, "Point tables" / "Weights" / "Score
     distribution and suitability levels".
   - `subzone_summary` — `src/05_subzone_summary.py` (keyed on
     `subzone`): parcel count, mean score, and %
-    Excellent/Good/Marginal per subzone, for the 4,100 scored parcels
+    Excellent/Good/Marginal per subzone, for the 4,104 scored parcels
     within the 5 named subzones.
   - `cross_project_comparison` — `src/06_cross_project_comparison.py`
     (keyed on `subzone`): Terroir's mean_score joined against
@@ -38,20 +39,30 @@ Fase 2 ingestion and Fase 3 scoring complete. Two files generated so far
   - `subzone_climate_risk` — `src/07_ingest_climate_risk.py` (keyed on
     `subzone`): frost days, chill hours, and heavy rain days (2016-2025,
     raw totals plus per-year figures) at one representative point per
-    subzone. See `docs/methodology.md`, "Climate risk ingestion
+    subzone. Unaffected by the Whakatane District scope expansion (not
+    one of the 5 named subzones this table is keyed on), so not
+    re-run — see `docs/methodology.md`, "Climate risk ingestion
     (business question 5)".
   - `suitability_levels_summary` — `src/08_regional_summary_expansion.py`
     (keyed on `suitability_level`): count and % Excellent/Good/Marginal
-    across all 16,447 scored parcels region-wide (Excellent 69.1%, Good
-    27.1%, Marginal 3.8%) — the full-region counterpart to
-    `subzone_summary`'s 5-named-subzone view.
+    across all 21,491 scored parcels region-wide (Excellent 76.4%, Good
+    18.1%, Marginal 5.5%) — the full-region counterpart to
+    `subzone_summary`'s 5-named-subzone view (which runs noticeably
+    higher, 88.8% weighted-average Excellent, since Whakatane pulls the
+    region-wide figure down).
   - `expansion_candidates` — `src/08_regional_summary_expansion.py`
     (keyed on `source_id`, no geometry — join back to
-    `parcels_linz.geojson` for mapping): the 10,224 parcels with
+    `parcels_linz.geojson` for mapping): the 13,041 parcels with
     suitability_score >= 8.0 that aren't already LCDB-classified as
     orchard/vineyard/perennial crop. See `docs/methodology.md`,
     "Regional summary and expansion candidates (business questions 1
     and 2)".
+
+**Fixed boundary bug (see `docs/methodology.md`, "Score distribution and
+suitability levels"):** `subzone_summary` and `suitability_levels_summary`
+originally misclassified any parcel scoring exactly 5.0 or 8.0 into the
+lower tier, due to a `pandas.cut` default. Fixed and re-run — all figures
+above are post-fix.
 
 Neither file is committed to git due to size — see "Reproducing this
 data" below.

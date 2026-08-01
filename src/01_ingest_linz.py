@@ -6,7 +6,7 @@
 # =============================================================================
 """
 Fetches LINZ layer 122657 (NZ Property Boundaries), filtered server-side
-via CQL_FILTER to the 3 target territorial authorities AND area > 10,000 m2
+via CQL_FILTER to the 4 target territorial authorities AND area > 10,000 m2
 (the 1 ha threshold locked in docs/methodology.md, "Parcel selection: area
 threshold + LCDB as attribute, not filter"), and saves the result as
 data/processed/parcels_linz.geojson.
@@ -21,8 +21,17 @@ this layer's `territorial_authority` field uses official macron spelling
 ("Ōpōtiki District"), not the plain-ASCII "Opotiki District" this script
 originally filtered on. That silently matched 0 of 8,752 Opotiki District
 parcels since the first Fase 2 run — the "3 target TAs" were actually
-only 2. Filtering now uses `territorial_authority_ascii` for all 3 names,
+only 2. Filtering now uses `territorial_authority_ascii` for all names,
 not just Opotiki, since any of them could have the same macron trap.
+
+Scope expansion (see docs/data_sources.md, "Scope completeness
+verification"): Whakatane District added as a 4th target TA after
+confirming, with real LINZ/LCDB data rather than assumption, that it
+contains documented kiwifruit growing land (Edgecumbe / Rangitaiki
+Plains) while the region's other 2 excluded TAs (Kawerau District,
+Rotorua District) do not — Kawerau has 0.00% orchard/vineyard/perennial-
+crop LCDB coverage (checked via real parcel boundaries, not a bbox
+approximation) and Rotorua's is negligible (0.25%).
 """
 
 import os
@@ -45,6 +54,7 @@ TERRITORIAL_AUTHORITIES = (
     "Tauranga City",
     "Western Bay of Plenty District",
     "Opotiki District",
+    "Whakatane District",
 )
 AREA_THRESHOLD_M2 = 10_000
 

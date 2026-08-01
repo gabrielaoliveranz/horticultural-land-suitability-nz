@@ -53,19 +53,22 @@ Elevation is noted as a possible v2 extension, not a current gap.
 
 ## Parcel selection: area threshold + LCDB as attribute, not filter
 
-LINZ Property Boundaries (layer 122657) within the 3 target TAs returns
-118,265 parcels — mostly urban/residential and unusable for this analysis.
-Filtered to parcels > 10,000 m² (1 ha), reducing to 17,400 parcels:
-Western Bay of Plenty District 11,028, Tauranga City 3,237, Ōpōtiki
-District 3,135. This threshold is a size-based proxy, not a true
-land-use filter (LINZ has no land-use field); it may include some
-non-horticultural rural land.
+LINZ Property Boundaries (layer 122657) within the 4 target TAs returns
+139,452 parcels — mostly urban/residential and unusable for this analysis.
+Filtered to parcels > 10,000 m² (1 ha), reducing to 22,834 parcels:
+Western Bay of Plenty District 11,028, Whakatane District 5,434,
+Tauranga City 3,237, Ōpōtiki District 3,135. This threshold is a
+size-based proxy, not a true land-use filter (LINZ has no land-use
+field); it may include some non-horticultural rural land.
 
-(Earlier figures of 109,513 / 14,265 covered only 2 of the 3 TAs — a
-macron mismatch in the CQL filter silently excluded all of Opotiki
-District from the first Fase 2 run through several iterations. Fixed by
-filtering on `territorial_authority_ascii`; see docs/data_sources.md,
-"Technical note (macrons)".)
+(Earlier figures of 109,513 / 14,265 covered only 2 of the original 3
+TAs — a macron mismatch in the CQL filter silently excluded all of
+Opotiki District from the first Fase 2 run through several iterations.
+Fixed by filtering on `territorial_authority_ascii`; see
+docs/data_sources.md, "Technical note (macrons)". A later figure of
+17,400/118,265 covered the correct 3 TAs before Whakatane District was
+added as a 4th — see "Scope completeness verification" in
+docs/data_sources.md for why.)
 
 LCDB v6.0 (LRIS layer 123148) provides real land-use classification,
 including an "Orchard, Vineyard or Other Perennial Crop" class — 1,809
@@ -111,11 +114,14 @@ citations), not derived from the source data itself.
 score = (soil_order × 0.4) + (soil_texture × 0.4) + (soil_drainage × 0.1) + (soil_depth × 0.1)
 
 Weight rationale: soil_order and soil_texture show high variation across
-the 17,400 parcels (soil_order ranges from 62% Allophanic down to single
-digits for several categories; soil_texture is 72% Loamy down to <1%
+the 22,834 parcels (soil_order ranges from 41.7% Allophanic + 28.2%
+Pumice down to <1% Anthropic; soil_texture is 64.2% Loamy down to <1%
 Clayey), making them meaningful differentiators. soil_drainage and
-soil_depth are heavily skewed (>90% "Well drained", >96% "Deep"),
-providing little differentiating signal across most parcels.
+soil_depth are more skewed (86.5% "Well drained", 94.1% "Deep"),
+providing less differentiating signal across most parcels — though with
+Whakatane District added, both are noticeably less dominant than the
+original 3-TA figures (>90% / >96% respectively), since Whakatane's
+soil profile is more varied than Tauranga/Western Bay/Opotiki's.
 
 **Important caveat:** the 80/20 split between the two factor pairs is a
 reasoned design decision based on observed variation, not a formal
@@ -127,15 +133,15 @@ to revision as a future refinement.
 
 ### Score distribution and suitability levels
 
-The scoring formula produces a heavily right-skewed distribution: 59.1%
-of scored parcels (9,720 of 16,447) score exactly 10.0. This reflects the
-underlying geology of Bay of Plenty (soil_order ~81% Allophanic/Pumice,
-soil_texture ~72% Loamy, soil_drainage >90% Well drained, soil_depth >96%
-Deep) rather than a modelling error — most parcels stack every factor at
-its maximum.
+The scoring formula produces a right-skewed distribution: 46.7% of
+scored parcels (10,037 of 21,491) score exactly 10.0. This reflects the
+underlying geology of Bay of Plenty (soil_order ~65.9% Allophanic/Pumice,
+soil_texture ~64.2% Loamy, soil_drainage 86.5% Well drained, soil_depth
+94.1% Deep) rather than a modelling error — most parcels stack every
+factor at or near its maximum.
 
 **Consequence for business question 1:** a forced top-N ranking is
-uninformative when 59% of parcels tie for first place. Instead, parcels
+uninformative when 47% of parcels tie for first place. Instead, parcels
 are grouped into suitability levels:
 
 - Excellent: 8.0-10.0
@@ -144,6 +150,21 @@ are grouped into suitability levels:
 
 Business question 1 is answered by reporting the % of parcels per level
 and their geographic concentration by subzone, not a single ranked list.
+
+**Boundary bug, fixed:** `05_subzone_summary.py` and
+`08_regional_summary_expansion.py` originally binned scores with
+`pandas.cut`'s default `right=True`, which is right-*inclusive* —
+placing a score of exactly 5.0 in "Marginal" and exactly 8.0 in "Good",
+both contradicting the ranges stated above (5.0 belongs in Good, 8.0 in
+Excellent). This silently misclassified any parcel that scored exactly
+on a tier boundary — 4,176 of 21,491 parcels (19.4%) scored exactly 8.0
+and were wrongly counted as "Good". It was caught because
+`expansion_candidates` (filtered on the literal `suitability_score >=
+8.0`) came out *larger* than the "Excellent" count reported by
+`suitability_levels_summary`, which should be structurally impossible
+since candidates are a subset of the Excellent tier. Fixed by binning
+with `right=False` instead, which correctly makes both the 5.0 and 8.0
+boundaries left-inclusive. All figures in this document are post-fix.
 
 **Future refinement (not implemented):** once climate risk data (frost,
 heavy rainfall) is ingested, it could serve as a tiebreaker within the
@@ -159,25 +180,28 @@ breakdown above to the full dataset (not just parcels within Apophenia's
 `05_subzone_summary.py`) and answers business question 2.
 
 **Business question 1, region-wide (`suitability_levels_summary`):** of
-16,447 scored parcels — Excellent 11,358 (69.1%), Good 4,464 (27.1%),
-Marginal 625 (3.8%). The region-wide picture is even more skewed toward
-"Excellent" than the 5-named-subzone view, consistent with the skew
-already documented above.
+21,491 scored parcels — Excellent 16,414 (76.4%), Good 3,889 (18.1%),
+Marginal 1,188 (5.5%). This is actually *less* skewed toward "Excellent"
+than the 5-named-subzone view (`subzone_summary`, weighted average
+88.8% Excellent across Tauranga/Te Puke/Pongakawa/Katikati/Opotiki) — the
+region-wide figure is pulled down by Whakatane District, which sits
+almost entirely outside the 5 named subzones and has a more varied soil
+profile than the tightly-curated Apophenia footprint.
 
 **Business question 2, expansion candidates (`expansion_candidates`):**
 parcels with `suitability_score >= 8.0` (Excellent tier) that are NOT
 already classified as `lcdb_class_2023 = 'Orchard, Vineyard or Other
 Perennial Crop'` — good-to-excellent soil with no current orchard/
 vineyard/perennial-crop use, i.e. real expansion candidates rather than
-existing orchards. Result: **10,224 parcels** (90.0% of all 11,358
+existing orchards. Result: **13,041 parcels** (79.5% of all 16,414
 Excellent-tier parcels) — most excellent-soil land in the region is not
 currently under orchard/vineyard/perennial-crop use, which tracks with
 LCDB's own region-wide finding that only ~3% of land cover falls in that
-class (see "Parcel selection" above). Breakdown by subzone: 7,392 fall
+class (see "Parcel selection" above). Breakdown by subzone: 10,205 fall
 outside the 5 named subzones, then Tauranga 1,972, Te Puke 407,
-Pongakawa 247, Katikati 166, Opotiki 40.
+Pongakawa 251, Katikati 166, Opotiki 40.
 
-Parcels with a NULL `lcdb_class_2023` (57 of 17,400 overall — no LCDB
+Parcels with a NULL `lcdb_class_2023` (60 of 22,834 overall — no LCDB
 match) are included as candidates, not excluded: they are not confirmed
 orchard, and excluding them would silently drop otherwise-qualifying
 parcels because of an LCDB coverage gap rather than because they're
@@ -187,15 +211,16 @@ actually disqualified. `expansion_candidates` stores `source_id` only
 
 ### Handling unmatched parcels (nulls)
 
-953 of 17,400 parcels (5.5%) have no S-map match (soil_depth, soil_texture,
-soil_drainage, soil_order all null); 57 (0.3%) have no LCDB match. These
-parcels fall outside S-map's/LCDB's mapped coverage — typically coastal
-edge cases, not a data quality error (see docs/data_sources.md ingestion
-notes). The unmatched rate rose from 0.8% to 5.5% once Opotiki District's
-3,135 parcels were correctly included — plausible given Opotiki's more
-remote/coastal terrain (East Cape localities, offshore islands) likely
-has thinner S-map coverage than the Tauranga/Western Bay urban-fringe
-area the 0.8% figure was based on.
+1,343 of 22,834 parcels (5.9%) have no S-map match (soil_depth,
+soil_texture, soil_drainage, soil_order all null); 60 (0.3%) have no
+LCDB match. These parcels fall outside S-map's/LCDB's mapped coverage —
+typically coastal/rural edge cases, not a data quality error (see
+docs/data_sources.md ingestion notes). The unmatched rate has risen in
+stages as scope expanded: 0.8% (2 TAs) → 5.5% (3 TAs, once Opotiki
+District's more remote/coastal terrain was correctly included) → 5.9%
+(4 TAs, with Whakatane District added) — each addition has pulled in
+land further from the original Tauranga/Western Bay urban-fringe core,
+where S-map coverage is most complete.
 
 Decision: parcels with any null soil attribute are excluded from the
 suitability score entirely, not assigned a default/imputed value.
@@ -248,7 +273,7 @@ independent of the synthetic-data caveat.
 ## Climate risk ingestion (business question 5)
 
 **Representative point per subzone:** rather than querying weather data
-per parcel (17,400 API calls), each subzone is reduced to a single
+per parcel (22,834 API calls), each subzone is reduced to a single
 representative point — the average centroid of every parcel assigned
 that subzone (subzone IS NOT NULL, same assignment as
 `03_ingest_subzones.py`). Centroids are averaged in a projected CRS

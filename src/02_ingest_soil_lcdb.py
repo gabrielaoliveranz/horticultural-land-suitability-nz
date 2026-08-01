@@ -70,7 +70,9 @@ PAGE_SIZE = 1000
 REQUEST_TIMEOUT = 120
 
 # Bay of Plenty bounding box (Katikati to East Cape) — widened to cover
-# all 3 target TAs correctly; see module docstring's "Bbox note".
+# all target TAs correctly (originally for Opotiki District, still
+# sufficient for Whakatane District added later); see module docstring's
+# "Bbox note".
 BOP_BBOX_COORDS = (175.7, -38.9, 178.2, -37.2)
 BOP_BBOX = "{},{},{},{},urn:ogc:def:crs:OGC:1.3:CRS84".format(*BOP_BBOX_COORDS)
 

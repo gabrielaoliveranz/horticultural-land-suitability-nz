@@ -4,12 +4,15 @@ Purpose: defines what Terroir's analysis must answer before any ingestion
 or scoring code is written.
 
 1. Which parcels within Tauranga City / Western Bay of Plenty / Opotiki
-   District show the best land suitability for kiwifruit? Answered via
-   suitability levels (Excellent/Good/Marginal), not a single ranked
-   top-N list — the scoring distribution is heavily right-skewed (59%
-   of scored parcels tie at the maximum score), so a forced ranking
-   would be uninformative. See `docs/methodology.md`, "Score
-   distribution and suitability levels" for the reasoning.
+   District / Whakatane District show the best land suitability for
+   kiwifruit? (Whakatane District added after `docs/data_sources.md`'s
+   "Scope completeness verification" confirmed it holds real kiwifruit
+   land the original 3-TA footprint excluded.) Answered via suitability
+   levels (Excellent/Good/Marginal), not a single ranked top-N list —
+   the scoring distribution is right-skewed (47% of scored parcels tie
+   at the maximum score), so a forced ranking would be uninformative.
+   See `docs/methodology.md`, "Score distribution and suitability
+   levels" for the reasoning.
 2. Are there areas with no current horticultural use that should be
    considered for expansion?
 3. Cross-reference with Apophenia: does high operational risk (e.g.

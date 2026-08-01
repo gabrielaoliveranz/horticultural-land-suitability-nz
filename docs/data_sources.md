@@ -22,16 +22,20 @@ GetFeature both confirmed working) with an API key.
 **Auth:** API key, stored in `.env` as `LINZ_API_KEY`.
 
 **Geographic filter:** `CQL_FILTER` on `territorial_authority_ascii IN
-('Tauranga City','Western Bay of Plenty District','Opotiki District')` —
-matches the geographic footprint of Apophenia's five corridors. Filters
+('Tauranga City','Western Bay of Plenty District','Opotiki District',
+'Whakatane District')` — the first 3 match the geographic footprint of
+Apophenia's five corridors; Whakatane District was added as a 4th TA
+after the scope completeness verification below confirmed it holds
+documented kiwifruit land that the original footprint excluded. Filters
 on `territorial_authority_ascii`, not `territorial_authority` — see
 "Technical note (macrons)" below.
 
-**Parcel counts (server-side CQL, 3 TAs + area > 10,000 m² / 1 ha):**
-17,400 total — Western Bay of Plenty District 11,028, Tauranga City
-3,237, Ōpōtiki District 3,135. See `docs/methodology.md`, "Parcel
-selection: area threshold + LCDB as attribute, not filter" for the
-full area-threshold reasoning.
+**Parcel counts (server-side CQL, 4 TAs + area > 10,000 m² / 1 ha):**
+22,834 total (139,452 before the area threshold) — Western Bay of Plenty
+District 11,028, Whakatane District 5,434, Tauranga City 3,237, Ōpōtiki
+District 3,135. See `docs/methodology.md`, "Parcel selection: area
+threshold + LCDB as attribute, not filter" for the full area-threshold
+reasoning.
 
 **Licence:** Creative Commons Attribution 3.0 New Zealand (CC-BY) for most
 layers — free to use, requires attribution.
@@ -50,6 +54,24 @@ without it. LINZ/LRIS layers generally expose an `_ascii` companion field —
 always filter on that field, never hardcode a plain-ASCII name expecting it
 to match. This caused 01_ingest_linz.py to silently exclude all of Opotiki
 District from ingestion since the first Fase 2 run.
+
+**Scope completeness verification (Bay of Plenty region, 6 TAs total):**
+Checked whether any kiwifruit orchard land exists in the 2 Bay of Plenty
+TAs excluded from this study (Kawerau District, Rotorua District), using
+LCDB's "Orchard, Vineyard or Other Perennial Crop" class as ground truth.
+
+- Rotorua District: 0.25% (20 of 8,147 LCDB polygons) — negligible.
+- Kawerau District: 0.00% (0 of 3,462 real parcels, via
+  territorial_authority_ascii on layer 122657) — confirmed via LINZ
+  parcel-level administrative field, after two unreliable bbox-based
+  approximations (locality-derived bbox undercounted; a buffered bbox
+  overcounted by bleeding into neighbouring districts) were tried and
+  discarded first.
+
+**Decision:** Whakatāne District (containing Edgecumbe and the Rangitāiki
+Plains — a historically documented kiwifruit area per Te Ara Encyclopedia)
+is added as a 4th target TA. Kawerau District and Rotorua District remain
+excluded, confirmed by real data rather than assumed.
 
 ---
 
