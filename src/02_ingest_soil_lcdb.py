@@ -13,20 +13,33 @@ and spatial-joins (predicate="within") each centroid against:
 all bbox-filtered to the documented Bay of Plenty extent (same bbox used
 and validated in src/00_explore_volumes.py / docs/methodology.md).
 
-Assembles parcel_id, soil_depth, soil_texture, soil_drainage, soil_order,
-lcdb_class_2023 into one table and saves it as `parcel_attributes` in
-data/processed/terroir.db (SQLite). Unmatched parcels (no polygon at that
-centroid, or a null attribute) are reported per column, not treated as a
-failure — some gaps are expected at soil/land-cover coverage edges.
+Assembles source_id, parcel_id, soil_depth, soil_texture, soil_drainage,
+soil_order, lcdb_class_2023 into one table and saves it as
+`parcel_attributes` in data/processed/terroir.db (SQLite). Unmatched
+parcels (no polygon at that centroid, or a null attribute) are reported
+per column, not treated as a failure — some gaps are expected at
+soil/land-cover coverage edges.
 
-Data quality note: raw parcel geometry bounds are NOT used to derive the
-WFS bbox. 3 of the 14,265 parcels are LINZ "Unit of Property" features
-that bundle multiple legally distinct parcels (different Lot/DP legal
-descriptions) scattered far outside the Bay of Plenty under one feature
-— their combined bounds span almost the length of the country. Using the
-documented bbox instead keeps the S-map/LCDB fetch scoped correctly; the
-3 affected parcels are flagged by parcel_id and simply come back
-unmatched on every attribute, which is the correct outcome for them.
+Data quality note (key choice): `source_id` is the row's unique key, NOT
+`parcel_id`. Confirmed against the live data — only 11,936 of 14,265
+`parcel_id` values are unique (468 values shared across 2,797 rows: LINZ
+"Unit of Property" features such as cross-leases/unit titles that share
+one underlying cadastral parcel_id but are genuinely distinct rows with
+different geometry, area, and valuation_reference). `source_id` is
+unique across all 14,265 rows. Joining/indexing on parcel_id silently
+broadcasts one row's spatial-join result onto every other row sharing
+its parcel_id — found via a mismatched row count while building
+03_ingest_subzones.py. `parcel_id` is kept as a plain reference column,
+not a key.
+
+Data quality note (bbox): raw parcel geometry bounds are NOT used to
+derive the WFS bbox. 3 of the 14,265 parcels are LINZ "Unit of Property"
+features whose parts are scattered far outside the Bay of Plenty under
+one feature — their combined bounds span almost the length of the
+country. Using the documented bbox instead keeps the S-map/LCDB fetch
+scoped correctly; the 3 affected parcels are flagged by source_id and
+simply come back unmatched on every attribute, which is the correct
+outcome for them.
 """
 
 import os
@@ -75,7 +88,8 @@ def load_parcel_centroids(path):
     # converted back to WGS84 to match the WFS layers' output CRS.
     centroids = parcels.to_crs(2193).geometry.centroid.to_crs(4326)
     return geopandas.GeoDataFrame(
-        {"parcel_id": parcels["parcel_id"]}, geometry=centroids, crs=4326,
+        {"source_id": parcels["source_id"], "parcel_id": parcels["parcel_id"]},
+        geometry=centroids, crs=4326,
     )
 
 
@@ -93,7 +107,7 @@ def flag_out_of_region(centroids, bbox_coords):
             f"come back unmatched on every soil/LCDB attribute below:"
         )
         for _, row in outliers.iterrows():
-            print(f"  parcel_id={row['parcel_id']}  centroid=({row.geometry.x:.4f}, {row.geometry.y:.4f})")
+            print(f"  source_id={row['source_id']}  parcel_id={row['parcel_id']}  centroid=({row.geometry.x:.4f}, {row.geometry.y:.4f})")
     return centroids
 
 
@@ -137,17 +151,18 @@ def join_attribute(centroids, layer_gdf, source_field, output_column):
         )
 
     joined = geopandas.sjoin(
-        centroids[["parcel_id", "geometry"]],
+        centroids[["source_id", "geometry"]],
         layer_gdf[[source_field, "geometry"]],
         how="left",
         predicate="within",
     )
     # A centroid landing exactly on a shared polygon boundary can match
     # more than one feature; keep the first match rather than duplicate
-    # the parcel row.
-    joined = joined.drop_duplicates(subset="parcel_id", keep="first")
+    # the row. Keyed on source_id (the true unique row id), not
+    # parcel_id — see module docstring.
+    joined = joined.drop_duplicates(subset="source_id", keep="first")
     joined = joined.rename(columns={source_field: output_column})
-    return joined.set_index("parcel_id")[output_column]
+    return joined.set_index("source_id")[output_column]
 
 
 def report_unmatched(result, columns):
@@ -179,7 +194,9 @@ def main():
     print(f"  {len(lcdb_gdf):,} polygons fetched")
     attributes[LCDB_COLUMN] = join_attribute(centroids, lcdb_gdf, LCDB_FIELD, LCDB_COLUMN)
 
-    result = pd.DataFrame({"parcel_id": centroids["parcel_id"]}).set_index("parcel_id")
+    result = pd.DataFrame(
+        {"source_id": centroids["source_id"], "parcel_id": centroids["parcel_id"]}
+    ).set_index("source_id")
     for column, series in attributes.items():
         result[column] = series
     result = result.reset_index()
@@ -189,6 +206,10 @@ def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(OUTPUT_DB) as conn:
         result.to_sql(TABLE_NAME, conn, if_exists="replace", index=False)
+        conn.execute(
+            f"CREATE UNIQUE INDEX IF NOT EXISTS idx_{TABLE_NAME}_source_id "
+            f"ON {TABLE_NAME}(source_id)"
+        )
 
     print(f"\nSaved {len(result):,} rows to table '{TABLE_NAME}' in {OUTPUT_DB}")
 
