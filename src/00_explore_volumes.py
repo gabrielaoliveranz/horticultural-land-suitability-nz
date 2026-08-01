@@ -25,6 +25,14 @@ Purpose: gauge real data volume and geometry complexity before locking the
 SQLite vs SpatiaLite storage decision, and pick a defensible minimum-area
 cutoff for ingestion based on the actual distribution. No database writes
 here.
+
+Macron fix (see docs/data_sources.md, "Technical note (macrons)"): the
+original version of this script filtered on `territorial_authority`,
+which uses official macron spelling ("Ōpōtiki District") and silently
+matched 0 Opotiki District parcels — the same bug later found in
+01_ingest_linz.py. Now filters on `territorial_authority_ascii`. The bbox
+below is also widened to Opotiki's real extent (east to 178.2°, south to
+-38.9°), which the original narrower box would have half-missed.
 """
 
 import os
@@ -52,13 +60,14 @@ TERRITORIAL_AUTHORITIES = (
     "Western Bay of Plenty District",
     "Opotiki District",
 )
-LINZ_CQL_FILTER = "territorial_authority IN ({})".format(
+LINZ_CQL_FILTER = "territorial_authority_ascii IN ({})".format(
     ", ".join(f"'{ta}'" for ta in TERRITORIAL_AUTHORITIES)
 )
 
-# Bay of Plenty bounding box (Katikati to Opotiki): min_lon, min_lat,
-# max_lon, max_lat, CRS84 (lon/lat order).
-BOP_BBOX_COORDS = (175.7, -38.2, 177.4, -37.2)
+# Bay of Plenty bounding box (Katikati to East Cape): min_lon, min_lat,
+# max_lon, max_lat, CRS84 (lon/lat order). Widened to cover Opotiki
+# District's real extent — see module docstring's macron note.
+BOP_BBOX_COORDS = (175.7, -38.9, 178.2, -37.2)
 BOP_BBOX = "{},{},{},{},urn:ogc:def:crs:OGC:1.3:CRS84".format(*BOP_BBOX_COORDS)
 
 # Layer 122657 carries a server-computed "area" property in m² — no need
