@@ -15,6 +15,14 @@ Confirmed during Fase 2 exploration: this WFS rejects requests that set
 both `bbox` and `cql_filter` (500 "mutually exclusive") — same quirk as
 the LRIS WFS documented in docs/data_sources.md. Not an issue here since
 this script only needs the attribute filter, no bbox.
+
+Macron bug fix (see docs/data_sources.md, "Technical note (macrons)"):
+this layer's `territorial_authority` field uses official macron spelling
+("Ōpōtiki District"), not the plain-ASCII "Opotiki District" this script
+originally filtered on. That silently matched 0 of 8,752 Opotiki District
+parcels since the first Fase 2 run — the "3 target TAs" were actually
+only 2. Filtering now uses `territorial_authority_ascii` for all 3 names,
+not just Opotiki, since any of them could have the same macron trap.
 """
 
 import os
@@ -40,15 +48,18 @@ TERRITORIAL_AUTHORITIES = (
 )
 AREA_THRESHOLD_M2 = 10_000
 
-CQL_FILTER = "territorial_authority IN ({}) AND area > {}".format(
+# territorial_authority_ascii, not territorial_authority — see module
+# docstring's macron note.
+CQL_FILTER = "territorial_authority_ascii IN ({}) AND area > {}".format(
     ", ".join(f"'{ta}'" for ta in TERRITORIAL_AUTHORITIES),
     AREA_THRESHOLD_M2,
 )
 
 # Exploration (src/00_explore_volumes.py) swept area thresholds client-side
-# against a fixed 109,513-parcel baseline and found ~14,265 parcels above
-# 10,000 m². This run applies the same threshold server-side via CQL, so a
-# small difference from that figure is expected, not a bug.
+# against a 109,513-parcel baseline that, due to the macron bug above, only
+# covered Tauranga City + Western Bay of Plenty District. With Opotiki
+# District now correctly included, a materially higher row count than the
+# old ~14,265 figure is expected, not a bug.
 EXPECTED_ROW_COUNT_APPROX = 14_265
 
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "data" / "processed"
@@ -97,9 +108,9 @@ def main():
 
     print(f"\nSaved {len(gdf)} parcels to {OUTPUT_PATH}")
     print(
-        f"Expected approx. {EXPECTED_ROW_COUNT_APPROX:,} parcels from "
-        f"exploration (client-side threshold sweep) — a small difference "
-        f"from this server-side CQL filter run is expected."
+        f"Prior runs reported approx. {EXPECTED_ROW_COUNT_APPROX:,} parcels — "
+        f"that figure only covered 2 of 3 TAs due to the macron bug fixed "
+        f"above, so a materially higher count here is correct, not a bug."
     )
 
     assert OUTPUT_DIR.exists(), f"Expected output dir {OUTPUT_DIR} not found — check path"

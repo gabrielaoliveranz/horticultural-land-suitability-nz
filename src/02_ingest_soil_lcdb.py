@@ -10,8 +10,9 @@ and spatial-joins (predicate="within") each centroid against:
   - S-map layers 122758 (depth), 122760 (texture), 122764 (drainage),
     122765 (soil order)
   - LCDB layer 123148 (Name_2023 only)
-all bbox-filtered to the documented Bay of Plenty extent (same bbox used
-and validated in src/00_explore_volumes.py / docs/methodology.md).
+all bbox-filtered to the Bay of Plenty extent defined below (see "Bbox
+note" further down — this extent supersedes the narrower one originally
+explored in src/00_explore_volumes.py).
 
 Assembles source_id, parcel_id, soil_depth, soil_texture, soil_drainage,
 soil_order, lcdb_class_2023 into one table and saves it as
@@ -33,13 +34,22 @@ its parcel_id — found via a mismatched row count while building
 not a key.
 
 Data quality note (bbox): raw parcel geometry bounds are NOT used to
-derive the WFS bbox. 3 of the 14,265 parcels are LINZ "Unit of Property"
+derive the WFS bbox. A handful of parcels are LINZ "Unit of Property"
 features whose parts are scattered far outside the Bay of Plenty under
 one feature — their combined bounds span almost the length of the
-country. Using the documented bbox instead keeps the S-map/LCDB fetch
-scoped correctly; the 3 affected parcels are flagged by source_id and
-simply come back unmatched on every attribute, which is the correct
-outcome for them.
+country. Using a documented, deliberately-sized bbox instead keeps the
+S-map/LCDB fetch scoped correctly; those affected parcels are flagged by
+source_id and simply come back unmatched on every attribute, which is
+the correct outcome for them.
+
+Bbox note: widened from the original (175.7, -38.2, 177.4, -37.2) to
+(175.7, -38.9, 178.2, -37.2). That original box was sized against a
+2-of-3-TA dataset (Opotiki District was silently excluded by a macron
+bug in 01_ingest_linz.py's CQL filter — see docs/data_sources.md,
+"Technical note (macrons)"). With Opotiki District correctly included,
+its real extent reaches lon 178.15 / lat -38.82 (East Cape localities
+like Cape Runaway, Whanarua Bay) — the old box would have silently
+under-covered ~half of Opotiki's parcels.
 """
 
 import os
@@ -59,9 +69,9 @@ LRIS_WFS_BASE = f"https://lris.scinfo.org.nz/services;key={LRIS_API_KEY}/wfs"
 PAGE_SIZE = 1000
 REQUEST_TIMEOUT = 120
 
-# Bay of Plenty bounding box (Katikati to Opotiki) — same extent validated
-# in src/00_explore_volumes.py and documented in docs/methodology.md.
-BOP_BBOX_COORDS = (175.7, -38.2, 177.4, -37.2)
+# Bay of Plenty bounding box (Katikati to East Cape) — widened to cover
+# all 3 target TAs correctly; see module docstring's "Bbox note".
+BOP_BBOX_COORDS = (175.7, -38.9, 178.2, -37.2)
 BOP_BBOX = "{},{},{},{},urn:ogc:def:crs:OGC:1.3:CRS84".format(*BOP_BBOX_COORDS)
 
 # layer_id -> (source field, confirmed via sample feature; output column)

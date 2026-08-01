@@ -10,8 +10,8 @@ approach as 02_ingest_soil_lcdb.py), fetches LINZ layer 113764 (NZ Suburbs
 and Localities) bbox-filtered to the Bay of Plenty extent, and spatial-
 joins (predicate="within") to derive each parcel's Apophenia subzone:
 
-  - major_name == "Tauranga"                    -> "Tauranga"
-  - name in {Katikati, Te Puke, Pongakawa,
+  - major_name_ascii == "Tauranga"               -> "Tauranga"
+  - name_ascii in {Katikati, Te Puke, Pongakawa,
     Opotiki}                                     -> that name
   - anything else                                -> NULL (not one of the
     5 Apophenia subzones — reported, not forced)
@@ -30,11 +30,21 @@ CRS note (same lesson as 02_ingest_soil_lcdb.py): explicitly requests
 srsName=EPSG:4326 and verifies it against the response's own declared
 `crs` field rather than assuming.
 
-Naming note: layer 113764's `name` field uses macrons for te reo place
-names (e.g. "Ōpōtiki", not "Opotiki") — confirmed via a live sample
-before writing this script. Matching against the literal ASCII string
-"Opotiki" would have silently matched zero parcels. The layer's
-`name_ascii` field is used instead for exactly this reason.
+Naming note (macron-safe on both branches): layer 113764's `name` and
+`major_name` fields use official macron spelling for te reo place names
+(e.g. "Ōpōtiki", not "Opotiki") — confirmed via a live sample. This bit
+twice: first caught for the locality-name branch (fixed by matching
+name_ascii instead of name), then the major_name == "Tauranga" branch
+turned out to only work by coincidence, since "Tauranga" itself has no
+macron — the same trap was latent there too. Both branches now match
+against the `_ascii` companion fields (name_ascii, major_name_ascii)
+consistently, per docs/data_sources.md, "Technical note (macrons)".
+
+Bbox note: widened from the original (175.7, -38.2, 177.4, -37.2) to
+(175.7, -38.9, 178.2, -37.2) — see 02_ingest_soil_lcdb.py's docstring.
+The original box was sized before Opotiki District was correctly
+included in the dataset (see 01_ingest_linz.py) and would have missed
+the Ōpōtiki locality/suburb polygons this script depends on.
 """
 
 import os
@@ -56,13 +66,14 @@ PAGE_SIZE = 1000
 REQUEST_TIMEOUT = 120
 EXPECTED_CRS = "EPSG::4326"
 
-# Bay of Plenty bounding box — same extent used and documented throughout
-# Fase 2 (src/00_explore_volumes.py, src/02_ingest_soil_lcdb.py).
-BOP_BBOX_COORDS = (175.7, -38.2, 177.4, -37.2)
+# Bay of Plenty bounding box (Katikati to East Cape) — same widened
+# extent as src/02_ingest_soil_lcdb.py; see module docstring's bbox note.
+BOP_BBOX_COORDS = (175.7, -38.9, 178.2, -37.2)
 BOP_BBOX = "{},{},{},{},urn:ogc:def:crs:OGC:1.3:CRS84".format(*BOP_BBOX_COORDS)
 
 TAURANGA_MAJOR_NAME = "Tauranga"
-# Matched against name_ascii, not name — see module docstring.
+# Matched against name_ascii / major_name_ascii, not name / major_name —
+# see module docstring's naming note.
 TARGET_LOCALITIES = ("Katikati", "Te Puke", "Pongakawa", "Opotiki")
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -117,7 +128,7 @@ def fetch_localities(base_url, layer_id, bbox, page_size=PAGE_SIZE):
 
 def derive_subzone(joined):
     conditions = [
-        joined["major_name"] == TAURANGA_MAJOR_NAME,
+        joined["major_name_ascii"] == TAURANGA_MAJOR_NAME,
         joined["name_ascii"].isin(TARGET_LOCALITIES),
     ]
     choices = [
@@ -169,7 +180,7 @@ def main():
 
     joined = geopandas.sjoin(
         centroids[["source_id", "geometry"]],
-        localities[["name_ascii", "major_name", "geometry"]],
+        localities[["name_ascii", "major_name_ascii", "geometry"]],
         how="left",
         predicate="within",
     )
