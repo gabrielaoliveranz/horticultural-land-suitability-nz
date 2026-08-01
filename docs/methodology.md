@@ -222,6 +222,28 @@ actually disqualified. `expansion_candidates` stores `source_id` only
 (no geometry) — geometry for mapping is looked up from
 `parcels_linz.geojson` via that key when needed.
 
+**Known gap, not yet fixed upstream — urban/settlement classes:**
+`expansion_candidates` only excludes the literal orchard class; it does
+not exclude land that's already built on. `lcdb_class_2023 = 'Built-up
+Area (settlement)'` and `'Urban Parkland/Open Space'` both pass the
+current filter, since neither is "orchard" — 1,658 of the 13,041
+candidates (12.7%) are urban/settlement land, not genuine horticultural
+expansion land. First noticed when sampling candidates for external
+verification (2 of that Katikati sample's rows were exactly this).
+
+**Interim fix:** `dashboard/pages/3_Expansion_Candidates.py` excludes
+these 2 classes at the display layer, dropping the count shown there to
+11,383. This is reasonable for now but is a patch, not a real fix — it
+only helps consumers of that one dashboard page.
+
+**Refinement to do:** exclude the same 2 classes (or a broader
+"urban/built-up" set, if more are found) inside
+`src/08_regional_summary_expansion.py`'s `compute_expansion_candidates`
+itself, so `expansion_candidates` is correct for every consumer, not
+just the dashboard — and re-run 08 so the table reflects it directly
+rather than relying on each downstream reader to re-apply the same
+filter.
+
 ### Handling unmatched parcels (nulls)
 
 1,343 of 22,834 parcels (5.9%) have no S-map match (soil_depth,

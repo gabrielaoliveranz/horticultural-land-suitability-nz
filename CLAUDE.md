@@ -39,6 +39,10 @@ original request. Include this in the same summary, don't wait to be asked.
   "loaded." Poll in a loop for either the exception or the expected
   success element, don't check once and move on (this is exactly how
   the Suitability Map's real MessageSizeError was almost missed).
+- **Any dashboard page with a map must include a loading spinner**
+  (`st.spinner(...)`) around the data-load/render step, matching the
+  pattern established on `2_Suitability_Map.py`. Apply this from the
+  start on new map pages, without being asked each time.
 
 ## Git hygiene
 

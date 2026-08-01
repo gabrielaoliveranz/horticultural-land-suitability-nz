@@ -18,7 +18,7 @@ dashboard/
 │   ├── 0_Intro.py               # built — landing page
 │   ├── 1_Overview.py            # built — KPI row + region-wide chart
 │   ├── 2_Suitability_Map.py     # built — parcel-level pydeck map
-│   ├── 3_Expansion_Candidates.py # stub
+│   ├── 3_Expansion_Candidates.py # built — pydeck map, LCDB-colored
 │   ├── 4_Apophenia_Comparison.py # stub
 │   └── 5_Climate_Risk.py        # stub
 └── README.md
@@ -26,7 +26,7 @@ dashboard/
 
 ## Status
 
-3 of 6 pages built:
+4 of 6 pages built:
 
 - `0_Intro.py` — **built**. One-line description, link to Apophenia
   (sister project), the real differentiator (from `PRODUCT.md`'s
@@ -43,10 +43,18 @@ dashboard/
   message size limit for the "All" view (229MB) — geometry is
   simplified (~1m tolerance) and coordinates rounded (6dp) in the cached
   loader; see the page's own docstring for the numbers.
-- `3_Expansion_Candidates.py`, `4_Apophenia_Comparison.py`,
-  `5_Climate_Risk.py` — **stubs**: title + "Under construction" only,
-  enough for navigation to work end-to-end. Each stub's docstring notes
-  which `terroir.db` table/business question it will eventually present.
+- `3_Expansion_Candidates.py` — **built**. Parcel-level pydeck map of
+  `expansion_candidates`, colored/filterable by LCDB class instead of
+  suitability level (subzone filter + LCDB class filter, both with
+  "All"), hover tooltip, spinner on load. Excludes urban/settlement LCDB
+  classes at the display layer (13,041 → 11,383 shown) — a known gap in
+  the underlying `expansion_candidates` table itself, logged in
+  `docs/methodology.md` as a refinement still to push back into
+  `08_regional_summary_expansion.py`.
+- `4_Apophenia_Comparison.py`, `5_Climate_Risk.py` — **stubs**: title +
+  "Under construction" only, enough for navigation to work end-to-end.
+  Each stub's docstring notes which `terroir.db` table/business question
+  it will eventually present.
 
 ## Known issues
 
@@ -64,6 +72,18 @@ dashboard/
   `.streamlit/config.toml` — it needs its own explicit light-style
   `map_style` on the `pydeck.Deck` object. Flagged for the final polish
   pass, along with the footer and button styling — not forgotten.
+
+## Design notes
+
+- **Expansion Candidates: ~52% of subzone x LCDB-class filter
+  combinations return zero results (69 of 132 possible pairs) — this is
+  expected, not a data gap.** Smaller subzones only have a handful of
+  the 22 LCDB classes present at all (Opotiki 3, Katikati 4, Pongakawa
+  6), so most combinations are legitimately empty. The page shows a
+  clear "No candidates match..." message for these rather than an empty
+  or broken map — see the page's own docstring for how this was
+  confirmed (and the crash it used to cause before the empty-state
+  check was added).
 
 ## Running locally
 
