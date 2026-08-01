@@ -24,6 +24,22 @@ original request. Include this in the same summary, don't wait to be asked.
   data) can be reported and handled inline; integrity bugs (wrong data
   silently written) require explicit confirmation first.
 
+## Testing (Playwright/Streamlit)
+
+- **Never use `waitUntil: 'networkidle'` on a Streamlit app.** Streamlit
+  holds a persistent WebSocket open for live reactivity, so network
+  activity never truly goes idle — the wait reliably times out (seen on
+  the Suitability Map page). Use `waitUntil: 'load'`, then poll
+  explicitly for the target element (e.g. `[data-testid="stException"]`
+  or the specific chart/test-id you expect) instead of trusting a single
+  post-load check.
+- **A single early check for `stException` can false-negative.** Heavy
+  renders (large pydeck charts, big dataframes) serialize/transfer
+  asynchronously — an error can surface seconds after the page looks
+  "loaded." Poll in a loop for either the exception or the expected
+  success element, don't check once and move on (this is exactly how
+  the Suitability Map's real MessageSizeError was almost missed).
+
 ## Git hygiene
 
 - **Separate commits for fixes vs. features** — never mixed in one commit.
