@@ -19,14 +19,14 @@ dashboard/
 │   ├── 1_Overview.py            # built — KPI row + region-wide chart
 │   ├── 2_Suitability_Map.py     # built — parcel-level pydeck map
 │   ├── 3_Expansion_Candidates.py # built — pydeck map, LCDB-colored
-│   ├── 4_Apophenia_Comparison.py # stub
-│   └── 5_Climate_Risk.py        # stub
+│   ├── 4_Apophenia_Comparison.py # built — cross-project comparison
+│   └── 5_Climate_Risk.py        # built — frost/chill/rain by subzone
 └── README.md
 ```
 
 ## Status
 
-4 of 6 pages built:
+6 of 6 pages built:
 
 - `0_Intro.py` — **built**. One-line description, link to Apophenia
   (sister project), the real differentiator (from `PRODUCT.md`'s
@@ -51,10 +51,25 @@ dashboard/
   the underlying `expansion_candidates` table itself, logged in
   `docs/methodology.md` as a refinement still to push back into
   `08_regional_summary_expansion.py`.
-- `4_Apophenia_Comparison.py`, `5_Climate_Risk.py` — **stubs**: title +
-  "Under construction" only, enough for navigation to work end-to-end.
-  Each stub's docstring notes which `terroir.db` table/business question
-  it will eventually present.
+- `4_Apophenia_Comparison.py` — **built**. Business question 3:
+  `cross_project_comparison` (5 subzones) shown as a real-vs-synthetic
+  table (Terroir's `mean_score` next to Apophenia's 3 synthetic risk
+  indicators), with correlations computed live from the loaded table
+  (not hardcoded) and plain-language interpretation for each, including
+  the near-zero one explicitly labeled "no meaningful relationship." A
+  prominent `st.warning()` disclaimer sits at the top, and the -0.86
+  PSA-incidence correlation carries its own caveat about Opotiki's
+  outlier influence — recomputed without Opotiki (r = -0.76, n=4) to
+  confirm the correlation survives removing it rather than assuming.
+- `5_Climate_Risk.py` — **built**. Business question 5:
+  `subzone_climate_risk` (5 subzones) shown as a table of the 3
+  annualized metrics (frost days/year, chill hours/year avg, heavy rain
+  days/year), with the raw 10-year totals for frost and heavy rain
+  tucked into an expander (chill hours has no raw-total column, only
+  the average). Interpretation covers near-zero frost region-wide, the
+  coastal-vs-inland chill-hour split (grounded in the subzones' own
+  lat/lon and known geography, not just the numbers), and Opotiki's
+  standout heavy-rain frequency.
 
 ## Known issues
 
