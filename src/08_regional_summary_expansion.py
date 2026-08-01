@@ -10,26 +10,30 @@ Answers business question 1 (region-wide, not just the 5 named subzones —
 (expansion candidates).
 
 Part 1 — business question 1 (full regional picture):
-Groups all 16,447 scored parcels in parcel_scores into suitability levels
+Groups every scored parcel in parcel_scores into suitability levels
 (Excellent 8.0-10.0, Good 5.0-7.9, Marginal <5.0, same bins as
-05_subzone_summary.py) and reports count + % per level across the whole
-dataset, not just parcels within Apophenia's 5 named subzones. Saved as
+05_subzone_summary.py — both use right=False so a score of exactly 5.0
+or 8.0 lands in the higher tier, matching this range notation exactly)
+and reports count + % per level across the whole dataset, not just
+parcels within Apophenia's 5 named subzones. Saved as
 `suitability_levels_summary`.
 
 Part 2 — business question 2 (expansion candidates):
 Joins parcel_scores with parcel_attributes (lcdb_class_2023, subzone) on
-source_id, then filters to suitability_score >= 8.0 (Excellent tier) AND
+source_id, then filters to suitability_score >= 8.0 (Excellent tier —
+same boundary as Part 1's binning, kept consistent so a parcel counted
+Excellent in one table is never absent from the other) AND
 lcdb_class_2023 != 'Orchard, Vineyard or Other Perennial Crop' — parcels
 with good-to-excellent soil that aren't already growing orchard/vineyard/
 perennial crops, i.e. real expansion candidates rather than existing
-orchards. Parcels with a NULL lcdb_class_2023 (no LCDB match, 57 of
-17,400 overall) pass this filter too, since NULL is not equal to the
-orchard string either — they're not confirmed non-orchard, but they're
-not confirmed orchard, and excluding them would silently drop otherwise-
-qualifying parcels just because LCDB has a coverage gap there. Saved as
-`expansion_candidates` (source_id, suitability_score, lcdb_class_2023,
-subzone) — source_id is the join key back to parcels_linz.geojson for
-mapping geometry later, no geometry is duplicated into this table.
+orchards. Parcels with a NULL lcdb_class_2023 (no LCDB match) pass this
+filter too, since NULL is not equal to the orchard string either — they're
+not confirmed non-orchard, but they're not confirmed orchard, and
+excluding them would silently drop otherwise-qualifying parcels just
+because LCDB has a coverage gap there. Saved as `expansion_candidates`
+(source_id, suitability_score, lcdb_class_2023, subzone) — source_id is
+the join key back to parcels_linz.geojson for mapping geometry later, no
+geometry is duplicated into this table.
 
 Both parts save into data/processed/terroir.db and print their summary.
 """
@@ -69,7 +73,11 @@ def load_attributes(db_path):
 
 
 def compute_levels_summary(scores):
-    levels = pd.cut(scores["suitability_score"], bins=LEVEL_BINS, labels=LEVEL_LABELS)
+    # right=False: see 05_subzone_summary.py's summarise() for why — matches
+    # the documented "Excellent: 8.0-10.0" / "Good: 5.0-7.9" spec exactly,
+    # and keeps this consistent with compute_expansion_candidates() below,
+    # which filters on the same >= 8.0 boundary.
+    levels = pd.cut(scores["suitability_score"], bins=LEVEL_BINS, labels=LEVEL_LABELS, right=False)
     counts = levels.value_counts().reindex(LEVEL_LABELS)
     total = len(scores)
 

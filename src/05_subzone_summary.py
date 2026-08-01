@@ -47,8 +47,13 @@ def load_scored_subzones(db_path):
 
 
 def summarise(subzoned):
+    # right=False so bin edges are left-inclusive ([5.0, 8.0), [8.0, inf))
+    # matching the documented spec exactly ("Excellent: 8.0-10.0", "Good:
+    # 5.0-7.9") — pandas' right=True default put scores of exactly 5.0 or
+    # 8.0 in the lower tier, silently misclassifying every parcel that
+    # scored precisely on a boundary.
     subzoned["suitability_level"] = pd.cut(
-        subzoned["suitability_score"], bins=LEVEL_BINS, labels=LEVEL_LABELS,
+        subzoned["suitability_score"], bins=LEVEL_BINS, labels=LEVEL_LABELS, right=False,
     )
 
     level_pct = (
