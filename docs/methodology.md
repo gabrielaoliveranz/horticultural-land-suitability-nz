@@ -54,10 +54,18 @@ Elevation is noted as a possible v2 extension, not a current gap.
 ## Parcel selection: area threshold + LCDB as attribute, not filter
 
 LINZ Property Boundaries (layer 122657) within the 3 target TAs returns
-109,513 parcels — mostly urban/residential and unusable for this analysis.
-Filtered to parcels > 10,000 m² (1 ha), reducing to 14,265 parcels. This
-threshold is a size-based proxy, not a true land-use filter (LINZ has no
-land-use field); it may include some non-horticultural rural land.
+118,265 parcels — mostly urban/residential and unusable for this analysis.
+Filtered to parcels > 10,000 m² (1 ha), reducing to 17,400 parcels:
+Western Bay of Plenty District 11,028, Tauranga City 3,237, Ōpōtiki
+District 3,135. This threshold is a size-based proxy, not a true
+land-use filter (LINZ has no land-use field); it may include some
+non-horticultural rural land.
+
+(Earlier figures of 109,513 / 14,265 covered only 2 of the 3 TAs — a
+macron mismatch in the CQL filter silently excluded all of Opotiki
+District from the first Fase 2 run through several iterations. Fixed by
+filtering on `territorial_authority_ascii`; see docs/data_sources.md,
+"Technical note (macrons)".)
 
 LCDB v6.0 (LRIS layer 123148) provides real land-use classification,
 including an "Orchard, Vineyard or Other Perennial Crop" class — 1,411
@@ -81,11 +89,15 @@ ingestion results already in hand rather than on scoring weights.
 
 ### Handling unmatched parcels (nulls)
 
-113 of 14,265 parcels (0.8%) have no S-map match (soil_depth, soil_texture,
-soil_drainage, soil_order all null); 37 (0.3%) have no LCDB match. These
+953 of 17,400 parcels (5.5%) have no S-map match (soil_depth, soil_texture,
+soil_drainage, soil_order all null); 57 (0.3%) have no LCDB match. These
 parcels fall outside S-map's/LCDB's mapped coverage — typically coastal
 edge cases, not a data quality error (see docs/data_sources.md ingestion
-notes).
+notes). The unmatched rate rose from 0.8% to 5.5% once Opotiki District's
+3,135 parcels were correctly included — plausible given Opotiki's more
+remote/coastal terrain (East Cape localities, offshore islands) likely
+has thinner S-map coverage than the Tauranga/Western Bay urban-fringe
+area the 0.8% figure was based on.
 
 Decision: parcels with any null soil attribute are excluded from the
 suitability score entirely, not assigned a default/imputed value.

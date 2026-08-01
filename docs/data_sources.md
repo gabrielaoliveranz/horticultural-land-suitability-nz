@@ -21,9 +21,17 @@ GetFeature both confirmed working) with an API key.
 
 **Auth:** API key, stored in `.env` as `LINZ_API_KEY`.
 
-**Geographic filter:** `CQL_FILTER` on `territorial_authority IN
+**Geographic filter:** `CQL_FILTER` on `territorial_authority_ascii IN
 ('Tauranga City','Western Bay of Plenty District','Opotiki District')` —
-matches the geographic footprint of Apophenia's five corridors.
+matches the geographic footprint of Apophenia's five corridors. Filters
+on `territorial_authority_ascii`, not `territorial_authority` — see
+"Technical note (macrons)" below.
+
+**Parcel counts (server-side CQL, 3 TAs + area > 10,000 m² / 1 ha):**
+17,400 total — Western Bay of Plenty District 11,028, Tauranga City
+3,237, Ōpōtiki District 3,135. See `docs/methodology.md`, "Parcel
+selection: area threshold + LCDB as attribute, not filter" for the
+full area-threshold reasoning.
 
 **Licence:** Creative Commons Attribution 3.0 New Zealand (CC-BY) for most
 layers — free to use, requires attribution.
@@ -34,6 +42,14 @@ layers — free to use, requires attribution.
 deliberately excluded from the current scope — see `docs/methodology.md`
 ("Waterlogging risk: drainage-only proxy (DEM excluded)") for the
 reasoning. Not ruled out as a v2 extension.
+
+**Technical note (macrons):** Official NZ place names may include macrons
+(e.g. Ōpōtiki) that differ from plain-ASCII spellings. Exact-string filters
+using the macron field will silently return zero matches for names typed
+without it. LINZ/LRIS layers generally expose an `_ascii` companion field —
+always filter on that field, never hardcode a plain-ASCII name expecting it
+to match. This caused 01_ingest_linz.py to silently exclude all of Opotiki
+District from ingestion since the first Fase 2 run.
 
 ---
 
