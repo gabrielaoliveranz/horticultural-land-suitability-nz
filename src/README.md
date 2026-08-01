@@ -5,7 +5,7 @@ geospatial utilities.
 
 ## Status
 
-Three scripts so far, all following the Python header standard in
+Four scripts so far, all following the Python header standard in
 `docs/conventions.md`:
 
 - `00_explore_volumes.py` — exploratory, not the ingestion pipeline. No
@@ -16,13 +16,19 @@ Three scripts so far, all following the Python header standard in
   `docs/data_sources.md`).
 - `01_ingest_linz.py` — production ingestion. Fetches LINZ Property
   Boundaries server-side filtered to the 3 target TAs + 1 ha area
-  threshold, saves `data/processed/parcels_linz.geojson` (14,265
+  threshold, saves `data/processed/parcels_linz.geojson` (17,400
   parcels).
 - `02_ingest_soil_lcdb.py` — production ingestion. Computes a centroid
   per parcel, spatial-joins the four S-map layers and LCDB, and saves the
-  result as `parcel_attributes` in `data/processed/terroir.db`
-  (SQLite) — 99%+ match rate, see `docs/methodology.md` ("Handling
-  unmatched parcels (nulls)").
+  result as `parcel_attributes` in `data/processed/terroir.db` (SQLite)
+  — 94.5% S-map match rate, 99.7% LCDB match rate, see
+  `docs/methodology.md` ("Handling unmatched parcels (nulls)").
+- `03_ingest_subzones.py` — production ingestion. Spatial-joins parcel
+  centroids against LINZ layer 113764 (NZ Suburbs and Localities) to
+  derive each parcel's Apophenia subzone (Tauranga, Katikati, Te Puke,
+  Pongakawa, Opotiki), adding a `subzone` column to `parcel_attributes`
+  — 23.7% of parcels fall within one of the 5 named subzones, by design
+  (see `docs/methodology.md`).
 
 Climate (Open-Meteo) ingestion and the scoring model are still to be
 added.

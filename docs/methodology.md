@@ -68,9 +68,14 @@ filtering on `territorial_authority_ascii`; see docs/data_sources.md,
 "Technical note (macrons)".)
 
 LCDB v6.0 (LRIS layer 123148) provides real land-use classification,
-including an "Orchard, Vineyard or Other Perennial Crop" class — 1,411
-polygons (7.2%) in the Bay of Plenty bbox. LCDB's own 1 ha minimum mapping
-unit independently aligns with the area threshold above.
+including an "Orchard, Vineyard or Other Perennial Crop" class — 1,809
+polygons (3.0%) of 60,368 total in the Bay of Plenty bbox. LCDB's own
+1 ha minimum mapping unit independently aligns with the area threshold
+above.
+
+(Earlier figures of 1,411 / 7.2% of 19,525 were based on the same
+narrower, pre-fix bbox as above — re-run with the corrected filter and
+widened bbox in src/00_explore_volumes.py.)
 
 Decision: LCDB class is joined to each parcel via spatial join (centroid-
 in-polygon) as an **attribute**, not used to filter parcels out. Filtering
