@@ -347,6 +347,47 @@ Not yet incorporated into `suitability_score` — see "Future refinement
 
 ---
 
+## Scope boundaries: wind/Psa, slope, and irrigation/licensing not modelled
+
+Three real agronomic/commercial factors are not part of `suitability_score`
+and have no ingested data behind them. Unlike the DEM/waterlogging and PAW
+exclusions above — which were genuinely evaluated as data sources and
+rejected for a stated reason (DEM: no flow-direction/catchment analysis in
+scope; PAW: locked in a restricted licensing tier) — none of these three
+were evaluated as a data source at all. They are disclosed here as scope
+boundaries, not as decisions with a documented rejection reasoning.
+
+- **Wind exposure and Psa disease risk.** Wind exposure affects both
+  physical crop/vine damage and the spread of Psa (*Pseudomonas syringae*
+  pv. *actinidiae*, the bacterial canker that severely impacted the NZ
+  kiwifruit industry from 2010) — both real, well-documented agronomic
+  suitability factors. Neither wind data nor Psa incidence/spread data is
+  ingested or scored anywhere in Terroir. The only Psa reference in this
+  project is Apophenia's own `psa_incidence_historical` column, used
+  exclusively for the cross-project correlation in
+  `06_cross_project_comparison.py` (business question 3, see "Cross-project
+  comparison" above) — it is Apophenia's operational-risk indicator, not an
+  input to Terroir's own scoring model.
+- **Slope / terrain.** Slope materially affects machinery operability and
+  orchard establishment cost, independent of the waterlogging question DEM
+  was evaluated for above. No slope or terrain dataset was ingested or
+  assessed for this project — this is a distinct gap from the DEM exclusion,
+  not a restatement of it.
+- **Irrigation access and Zespri varietal licensing.** Two commercially
+  significant factors sit entirely outside LINZ/S-map/LCDB/Open-Meteo's
+  coverage: physical irrigation water access/consent, and Zespri's licensed-
+  variety system, which governs where new plantings of a given cultivar
+  (e.g. SunGold) can commercially proceed regardless of physical soil
+  suitability. Neither was evaluated as a data source.
+
+**Consequence:** `suitability_score` measures physical soil/climate
+suitability only. It is not a measure of commercial plantability or
+near-term investment readiness, and should not be read as one — a parcel
+scoring "Excellent" here could still be commercially unplantable for
+reasons entirely outside this model's scope.
+
+---
+
 ## Geometry simplification moved to ingestion
 
 **Why:** both map pages (`2_Suitability_Map.py`, `3_Expansion_Candidates.py`)

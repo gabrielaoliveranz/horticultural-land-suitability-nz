@@ -1,46 +1,174 @@
 # Terroir
 
-Geospatial land suitability analysis for Bay of Plenty horticulture — the
-sister project to Apophenia™ (Gabriela Olivera's kiwifruit export risk
-simulator, already deployed).
+Geospatial land-suitability analysis for Bay of Plenty horticulture — the sister project to [Apophenia](https://apophenia-nz.vercel.app) (Gabriela Olivera's kiwifruit export risk simulator).
 
-## Objective
+## Overview
 
-Analyse soil suitability and territorial risk at subzone level for Bay of
-Plenty horticulture, combining cadastral, soil, and climate data. Where
-Apophenia models regional climate-logistics risk, Terroir focuses on
-land-level suitability — the aim is to demonstrate genuine geospatial
-analysis (real shapefiles/GeoJSON, not standalone lat/long pairs), work
-across multiple public New Zealand data sources, and produce business
-insight applicable to horticulture and council GIS/asset-management roles.
+Terroir scores 22,834 real LINZ property parcels across four Bay of Plenty territorial authorities (Tauranga City, Western Bay of Plenty District, Ōpōtiki District, Whakatāne District) for kiwifruit land suitability, using a weighted soil-attribute model built on official New Zealand government geospatial data. The pipeline ingests cadastral boundaries, soil classification, land-cover, and climate data, joins them spatially at the parcel level, and presents the results through a 6-page Streamlit dashboard — parcel-level maps, expansion-candidate identification, and a cross-project comparison against Apophenia's operational-risk model.
 
-## Stack
+## What it demonstrates
 
-- **Dashboard:** Streamlit (decision documented in `docs/methodology.md`)
-- **Geospatial processing:** Python (geopandas and related tooling), SQL
-- **Data sources:** LINZ Data Service, S-map (Manaaki Whenua / Landcare
-  Research), and Open-Meteo for climate (NIWA was evaluated and dropped
-  in favour of Open-Meteo — see `docs/data_sources.md`)
+- **Geospatial ETL from real external data sources** — LINZ (cadastral boundaries) and LRIS/Manaaki Whenua (S-map soil layers, LCDB land cover) via WFS 2.0.0, plus Open-Meteo's climate API — not synthetic or Kaggle-style data.
+- **Spatial joins at scale** — centroid-in-polygon joins across 22,834 parcels against soil, land-cover, subzone, and (aggregated) climate data.
+- **A documented, weighted scoring model** — every point value and weight sourced and justified in `docs/methodology.md`, including a boundary bug found and fixed in production.
+- **Accessibility-verified visualisation** — the suitability map's colour scheme was checked under simulated deuteranopia/protanopia (via `colorspacious`), and a full WCAG contrast audit was run across all 6 dashboard pages, not just the brand palette.
+- **Cross-project analysis** — Terroir's real, data-derived suitability scores joined against Apophenia's corridor risk indicators, with the real-vs-synthetic-data caveat stated plainly wherever the result appears.
 
-## Status
+## Project structure
 
-Fase 0 (data source investigation) and Fase 1 (business questions) are
-complete — see `docs/data_sources.md` and `docs/business_questions.md`.
-Fase 2 (data ingestion) is complete for parcels + soil + LCDB + subzones
-+ climate: 22,834 LINZ parcels across all 4 target TAs (Tauranga City,
-Western Bay of Plenty District, Ōpōtiki District, Whakatane District —
-1 ha area threshold; Whakatane added after confirming, with real data,
-that it holds kiwifruit land the other TAs' footprint excluded) joined
-to S-map, LCDB, and Apophenia-subzone attributes, plus Open-Meteo
-climate risk (frost days, chill hours, heavy rain days) at one
-representative point per subzone. Fase 3 (scoring) is implemented:
-21,491 parcels scored on a weighted soil suitability formula, grouped
-into Excellent/Good/Marginal levels, with a subzone-level summary, a
-region-wide summary, expansion-candidate identification, and a
-cross-project comparison against Apophenia's corridor risk data — see
-`src/README.md` and `docs/methodology.md`. No notebooks, dashboard, or
-case study content exist yet.
+```
+horticultural-land-suitability-nz/
+├── README.md
+├── PRODUCT.md                   # design/product decisions (Impeccable skill)
+├── CLAUDE.md                    # project-specific working conventions
+├── requirements.txt              # Python dependencies
+├── package.json                  # Playwright (dashboard testing), devDependency only
+├── .streamlit/config.toml        # dashboard theme (colours, fonts, radius)
+├── .env                          # LINZ_API_KEY, LRIS_API_KEY (not committed)
+│
+├── src/                          # ingestion + scoring pipeline, run in order
+│   ├── 00_explore_volumes.py     # exploratory only — no DB writes
+│   ├── 01_ingest_linz.py … 08_regional_summary_expansion.py
+│   └── README.md
+│
+├── dashboard/                    # Streamlit app
+│   ├── streamlit_app.py          # entrypoint (st.Page / st.navigation)
+│   ├── theme.py                  # design tokens only, no Streamlit calls
+│   ├── components.py             # shared rendering (footer, cards, callouts…)
+│   ├── assets/icons/              # footer icons (GitHub, LinkedIn, kiwifruit)
+│   ├── pages/                    # 0_Intro.py … 5_Climate_Risk.py (6 pages, all built)
+│   └── README.md
+│
+├── data/
+│   ├── raw/{linz,smap,lcdb,niwa,open-meteo}/  # placeholder READMEs only —
+│   │                              # data is fetched live via API each run,
+│   │                              # nothing cached to disk
+│   ├── processed/                # parcels_linz.geojson, terroir.db (not committed — see below)
+│   └── external/                 # dim_corridor_apophenia.csv (Apophenia's synthetic corridor data)
+│
+├── docs/
+│   ├── business_questions.md     # the 5 questions this analysis answers
+│   ├── data_sources.md           # per-source access method, licence, status
+│   ├── methodology.md            # every modelling/scoring decision + reasoning
+│   ├── attributions.md           # third-party asset log
+│   ├── conventions.md            # file header standard, project discipline
+│   └── README.md
+│
+├── case_study/
+│   ├── reference_design.html     # visual design reference (built via Claude's
+│   │                              # design tooling) — NOT the narrated case study
+│   ├── assets/                   # placeholder, unused
+│   └── README.md
+│
+├── notebooks/                    # placeholder, unused — no notebooks created
+└── sql/                          # placeholder, unused — no schema/queries written
+```
 
-## How to run
+`data/processed/parcels_linz.geojson` and `terroir.db` are generated by running the pipeline (below), not committed to git — same convention as `data/README.md` already documents.
 
-To be documented once the data pipeline and Streamlit app exist.
+## Module inputs → outputs (`src/`)
+
+| Script | Input | Output |
+|---|---|---|
+| `00_explore_volumes.py` | LINZ layer 122657, 4 S-map layers, LCDB layer 123148 (live WFS queries) | Console output only — volume/geometry stats, area-threshold validation. No database writes. |
+| `01_ingest_linz.py` | LINZ WFS layer 122657, CQL-filtered (4 TAs, area > 10,000 m²) | `data/processed/parcels_linz.geojson` — 22,834 parcels, geometry pre-simplified (~5m tolerance) |
+| `02_ingest_soil_lcdb.py` | Parcel centroids + 4 S-map WFS layers + LCDB WFS layer 123148 | `terroir.db`: `parcel_attributes` (soil_depth, soil_texture, soil_drainage, soil_order, lcdb_class_2023) |
+| `03_ingest_subzones.py` | Parcel centroids + LINZ layer 113764 (NZ Suburbs and Localities) | `terroir.db`: `parcel_attributes.subzone` column added |
+| `04_calculate_score.py` | `parcel_attributes` | `terroir.db`: `parcel_scores` — 21,491 parcels scored (nulls excluded) |
+| `05_subzone_summary.py` | `parcel_scores` + `parcel_attributes.subzone` | `terroir.db`: `subzone_summary` — 5 named Apophenia subzones |
+| `06_cross_project_comparison.py` | `subzone_summary` + `data/external/dim_corridor_apophenia.csv` | `terroir.db`: `cross_project_comparison` |
+| `07_ingest_climate_risk.py` | One representative centroid per subzone + Open-Meteo Historical Weather API (2016–2025) | `terroir.db`: `subzone_climate_risk` |
+| `08_regional_summary_expansion.py` | `parcel_scores` (region-wide) + `parcel_attributes.lcdb_class_2023` | `terroir.db`: `suitability_levels_summary` + `expansion_candidates` |
+
+## Local setup / How to run
+
+```bash
+git clone https://github.com/gabrielaoliveranz/horticultural-land-suitability-nz.git
+cd horticultural-land-suitability-nz
+
+python -m venv .venv
+.venv\Scripts\activate        # Windows; source .venv/bin/activate on macOS/Linux
+pip install -r requirements.txt
+
+# .env — see docs/data_sources.md for how each key was obtained:
+# LINZ_API_KEY  (LINZ Data Service / Koordinates account)
+# LRIS_API_KEY  (LRIS Portal — separate key, same Koordinates login; covers both S-map and LCDB)
+# Open-Meteo needs no key.
+
+python src/01_ingest_linz.py
+python src/02_ingest_soil_lcdb.py
+python src/03_ingest_subzones.py
+python src/04_calculate_score.py
+python src/05_subzone_summary.py
+python src/06_cross_project_comparison.py
+python src/07_ingest_climate_risk.py
+python src/08_regional_summary_expansion.py
+
+streamlit run dashboard/streamlit_app.py
+```
+
+`00_explore_volumes.py` is exploratory only and not required for the pipeline to run.
+
+## Data sources
+
+| Source | Type | Purpose | Licence |
+|---|---|---|---|
+| **LINZ** — NZ Property Boundaries (layer 122657) | WFS 2.0.0 vector API | Cadastral parcel boundaries, the base unit of analysis | CC-BY 3.0 New Zealand |
+| **S-map** — Soil Depth/Texture/Drainage/Classification (4 layers) | WFS 2.0.0 vector API, via LRIS Portal | Soil suitability attributes (soil_order, soil_texture, soil_drainage, soil_depth) | Open licence for these 4 layers. Water-holding-capacity (PAW) data is restricted (Base Property Data), not used — see Known Limitations. |
+| **LCDB** — Land Cover Database v6.0 (layer 123148) | WFS 2.0.0 vector API, via LRIS Portal | Current land-cover classification (identifies existing orchard/vineyard use) | Not separately stated in `docs/data_sources.md` — accessed via the same LRIS Portal/WFS as S-map, but its own licence terms aren't confirmed there independently of the 4 S-map layers. |
+| **Open-Meteo** — Historical Weather API (ERA5/ERA5-Land reanalysis) | REST/JSON, no API key or account required | Climate risk: frost days, chill hours, heavy-rain days per subzone | CC BY 4.0, free for non-commercial use |
+
+## Methodology highlights
+
+`suitability_score = (soil_order × 0.4) + (soil_texture × 0.4) + (soil_drainage × 0.1) + (soil_depth × 0.1)`, each factor scored 0–10 from a documented point table. Soil order and texture carry more weight because they vary meaningfully across the region's 22,834 parcels; drainage and depth are far more uniform (86.5% "Well drained", 94.1% "Deep") so they carry less signal. The resulting distribution is right-skewed (46.7% of scored parcels tie at exactly 10.0), so results are reported as suitability levels (Excellent/Good/Marginal) rather than a forced ranking. Full point tables, weight rationale, and a boundary-binning bug that was found and fixed in production are in `docs/methodology.md`.
+
+## Known limitations
+
+- **Waterlogging risk uses soil drainage class, not elevation/DEM.** LINZ elevation data was evaluated and deliberately excluded — no flow-direction/catchment analysis was in scope, and it would have added a raster toolchain for a proxy S-map drainage class already covers reasonably. See `docs/methodology.md`, "Waterlogging risk: drainage-only proxy (DEM excluded)".
+- **Water-holding capacity (PAW) isn't used.** It sits inside S-map's restricted "Base Property Data" layer, not the 4 open layers this project accesses. Soil texture + drainage are used as a proxy instead. See `docs/data_sources.md`.
+- **Territorial-authority scope changed twice, both times because of verification, not assumption.** A macron-spelling bug silently excluded all of Ōpōtiki District for several early runs; once fixed, Whakatāne District was added as a 4th TA after checking (via real LCDB parcel data, not a bounding-box approximation) that it holds documented kiwifruit land the original 3-TA footprint excluded, while confirming the two other candidate TAs (Kawerau, Rotorua) genuinely don't. See `docs/data_sources.md`, "Scope completeness verification".
+- **Wind exposure and Psa disease risk aren't modelled.** Neither wind data nor Psa (bacterial canker) incidence/spread data is ingested anywhere in Terroir; the only Psa reference in this project is Apophenia's own risk indicator, used solely for the cross-project correlation, not as a scoring input. A real scope gap, not a checked-and-rejected decision. See `docs/methodology.md`, "Scope boundaries: wind/Psa, slope, and irrigation/licensing not modelled".
+- **Slope/terrain isn't modelled.** Machinery operability and orchard establishment cost are meaningfully affected by slope; no slope or terrain dataset was ingested or assessed — a distinct gap from the DEM/waterlogging exclusion above, not a restatement of it. See `docs/methodology.md`.
+- **Irrigation access and Zespri varietal licensing aren't modelled.** Physical water access/consent and Zespri's licensed-variety planting system both sit outside this project's 4 data sources and were never evaluated. `suitability_score` measures physical soil/climate suitability only — not commercial plantability. See `docs/methodology.md`.
+- **`expansion_candidates` still includes some urban/settlement land.** The underlying table only excludes the literal orchard/vineyard LCDB class, not built-up land — 12.7% of candidates are urban/settlement. The dashboard filters these at display time as an interim fix; the real fix (pushing the exclusion into `08_regional_summary_expansion.py` itself) is a documented but not-yet-done refinement. See `docs/methodology.md`.
+- **Centroid-based spatial joins have an inherent precision limit.** A parcel sitting close to a soil/LCDB/subzone polygon boundary can flip its match if its centroid shifts even slightly (e.g. from geometry simplification) — quantified and disclosed, not hidden, in `docs/methodology.md`'s "Geometry simplification moved to ingestion" section.
+- **The scoring weights (80/20 split) are a reasoned design choice, not a formally derived statistic.** Documented as an assumption open to revision, not presented as more rigorous than it is. See `docs/methodology.md`, "Weights".
+
+## Roadmap
+
+| Stage | Status |
+|---|---|
+| Data ingestion (LINZ, S-map, LCDB, subzones, climate) | ✅ Done |
+| Scoring model + regional/expansion summaries | ✅ Done |
+| Cross-project comparison with Apophenia | ✅ Done |
+| Streamlit dashboard (6 pages) | ✅ Built, verified working locally |
+| Streamlit Community Cloud deployment | 🔄 Not yet done — no live URL exists |
+| Case study write-up | 🔄 Partial — a visual design reference exists (`case_study/reference_design.html`, built separately via Claude's design tooling), but the narrated case study (business question → methodology → findings → recommendation) hasn't been written, and nothing here is linked from the dashboard or deployed |
+| GitHub Pages deployment | 🔄 Not yet done — repo was only connected to GitHub this session, no Pages configuration exists |
+
+## Technology stack
+
+- **Python** — the entire pipeline and dashboard
+- **geopandas** / **shapely** — geospatial data handling, spatial joins, geometry simplification
+- **SQLite** (`terroir.db`) — processed/scored data storage
+- **Streamlit** (≥1.36) — dashboard framework, multipage via `st.Page`/`st.navigation`
+- **pydeck** / **deck.gl** — parcel-level interactive maps
+- **Altair** / **Vega-Lite** — charts
+- **Playwright** — dashboard testing (see `CLAUDE.md`'s testing conventions)
+- **Impeccable** (Claude Code design skill) — the dashboard's design-system, accessibility, and contrast-audit work
+
+## Author / Contact
+
+**Gabriela Olivera** — [LinkedIn](https://www.linkedin.com/in/gabriela-olivera-nz/) · [GitHub](https://github.com/gabrielaoliveranz) · [Repo](https://github.com/gabrielaoliveranz/horticultural-land-suitability-nz) · gabriela.olivera.nz@gmail.com
+
+## Icon credits
+
+- Cat icon (GitHub) by Dave Gandy — [Flaticon](https://www.flaticon.es/iconos-gratis/gato)
+- LinkedIn icon by Magnific — [Flaticon](https://www.flaticon.es/iconos-gratis/linkedin)
+- Kiwifruit icon by Park Jisun — [Flaticon](https://www.flaticon.com/free-icons/kiwifruit)
+
+Full source attribution log (all 9 entries: LINZ, 4×S-map, Open-Meteo, 3 icons) in `docs/attributions.md`.
+
+## Sister project
+
+Terroir is the land-suitability counterpart to [**Apophenia**](https://apophenia-nz.vercel.app), Gabriela Olivera's kiwifruit export operational-risk simulator — together they cover both land-level suitability and logistics/operational risk across Bay of Plenty horticulture.
