@@ -29,7 +29,7 @@ Fase 2 ingestion and Fase 3 scoring complete. Two files generated so far
     distribution and suitability levels".
   - `subzone_summary` — `src/05_subzone_summary.py` (keyed on
     `subzone`): parcel count, mean score, and %
-    Excellent/Good/Marginal per subzone, for the 4,104 scored parcels
+    Excellent/Good/Marginal per subzone, for the 4,103 scored parcels
     within the 5 named subzones.
   - `cross_project_comparison` — `src/06_cross_project_comparison.py`
     (keyed on `subzone`): Terroir's mean_score joined against
@@ -48,11 +48,11 @@ Fase 2 ingestion and Fase 3 scoring complete. Two files generated so far
     across all 21,491 scored parcels region-wide (Excellent 76.4%, Good
     18.1%, Marginal 5.5%) — the full-region counterpart to
     `subzone_summary`'s 5-named-subzone view (which runs noticeably
-    higher, 88.8% weighted-average Excellent, since Whakatane pulls the
+    higher, 88.9% weighted-average Excellent, since Whakatane pulls the
     region-wide figure down).
   - `expansion_candidates` — `src/08_regional_summary_expansion.py`
     (keyed on `source_id`, no geometry — join back to
-    `parcels_linz.geojson` for mapping): the 13,041 parcels with
+    `parcels_linz.geojson` for mapping): the 13,040 parcels with
     suitability_score >= 8.0 that aren't already LCDB-classified as
     orchard/vineyard/perennial crop. See `docs/methodology.md`,
     "Regional summary and expansion candidates (business questions 1

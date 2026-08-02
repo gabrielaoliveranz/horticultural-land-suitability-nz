@@ -134,7 +134,7 @@ to revision as a future refinement.
 ### Score distribution and suitability levels
 
 The scoring formula produces a right-skewed distribution: 46.7% of
-scored parcels (10,037 of 21,491) score exactly 10.0. This reflects the
+scored parcels (10,046 of 21,491) score exactly 10.0. This reflects the
 underlying geology of Bay of Plenty (soil_order ~65.9% Allophanic/Pumice,
 soil_texture ~64.2% Loamy, soil_drainage 86.5% Well drained, soil_depth
 94.1% Deep) rather than a modelling error — most parcels stack every
@@ -157,7 +157,7 @@ and their geographic concentration by subzone, not a single ranked list.
 placing a score of exactly 5.0 in "Marginal" and exactly 8.0 in "Good",
 both contradicting the ranges stated above (5.0 belongs in Good, 8.0 in
 Excellent). This silently misclassified any parcel that scored exactly
-on a tier boundary — 4,176 of 21,491 parcels (19.4%) scored exactly 8.0
+on a tier boundary — 4,174 of 21,491 parcels (19.4%) scored exactly 8.0
 and were wrongly counted as "Good". It was caught because
 `expansion_candidates` (filtered on the literal `suitability_score >=
 8.0`) came out *larger* than the "Excellent" count reported by
@@ -172,10 +172,10 @@ parcels:**
 | Level | Parcels | % |
 |---|---|---|
 | Excellent | 16,414 | 76.4% |
-| Good | 3,889 | 18.1% |
-| Marginal | 1,188 | 5.5% |
+| Good | 3,890 | 18.1% |
+| Marginal | 1,187 | 5.5% |
 
-(Full detail, including the 5-named-subzone view and its 88.8%
+(Full detail, including the 5-named-subzone view and its 88.9%
 weighted-average Excellent share, is in "Regional summary and expansion
 candidates" below.)
 
@@ -193,10 +193,10 @@ breakdown above to the full dataset (not just parcels within Apophenia's
 `05_subzone_summary.py`) and answers business question 2.
 
 **Business question 1, region-wide (`suitability_levels_summary`):** of
-21,491 scored parcels — Excellent 16,414 (76.4%), Good 3,889 (18.1%),
-Marginal 1,188 (5.5%). This is actually *less* skewed toward "Excellent"
+21,491 scored parcels — Excellent 16,414 (76.4%), Good 3,890 (18.1%),
+Marginal 1,187 (5.5%). This is actually *less* skewed toward "Excellent"
 than the 5-named-subzone view (`subzone_summary`, weighted average
-88.8% Excellent across Tauranga/Te Puke/Pongakawa/Katikati/Opotiki) — the
+88.9% Excellent across Tauranga/Te Puke/Pongakawa/Katikati/Opotiki) — the
 region-wide figure is pulled down by Whakatane District, which sits
 almost entirely outside the 5 named subzones and has a more varied soil
 profile than the tightly-curated Apophenia footprint.
@@ -206,15 +206,15 @@ parcels with `suitability_score >= 8.0` (Excellent tier) that are NOT
 already classified as `lcdb_class_2023 = 'Orchard, Vineyard or Other
 Perennial Crop'` — good-to-excellent soil with no current orchard/
 vineyard/perennial-crop use, i.e. real expansion candidates rather than
-existing orchards. Result: **13,041 parcels** (79.5% of all 16,414
+existing orchards. Result: **13,040 parcels** (79.4% of all 16,414
 Excellent-tier parcels) — most excellent-soil land in the region is not
 currently under orchard/vineyard/perennial-crop use, which tracks with
 LCDB's own region-wide finding that only ~3% of land cover falls in that
-class (see "Parcel selection" above). Breakdown by subzone: 10,205 fall
-outside the 5 named subzones, then Tauranga 1,972, Te Puke 407,
-Pongakawa 251, Katikati 166, Opotiki 40.
+class (see "Parcel selection" above). Breakdown by subzone: 10,203 fall
+outside the 5 named subzones, then Tauranga 1,973, Te Puke 406,
+Pongakawa 251, Katikati 166, Opotiki 41.
 
-Parcels with a NULL `lcdb_class_2023` (60 of 22,834 overall — no LCDB
+Parcels with a NULL `lcdb_class_2023` (59 of 22,834 overall — no LCDB
 match) are included as candidates, not excluded: they are not confirmed
 orchard, and excluding them would silently drop otherwise-qualifying
 parcels because of an LCDB coverage gap rather than because they're
@@ -226,14 +226,14 @@ actually disqualified. `expansion_candidates` stores `source_id` only
 `expansion_candidates` only excludes the literal orchard class; it does
 not exclude land that's already built on. `lcdb_class_2023 = 'Built-up
 Area (settlement)'` and `'Urban Parkland/Open Space'` both pass the
-current filter, since neither is "orchard" — 1,658 of the 13,041
+current filter, since neither is "orchard" — 1,662 of the 13,040
 candidates (12.7%) are urban/settlement land, not genuine horticultural
 expansion land. First noticed when sampling candidates for external
 verification (2 of that Katikati sample's rows were exactly this).
 
 **Interim fix:** `dashboard/pages/3_Expansion_Candidates.py` excludes
 these 2 classes at the display layer, dropping the count shown there to
-11,383. This is reasonable for now but is a patch, not a real fix — it
+11,378. This is reasonable for now but is a patch, not a real fix — it
 only helps consumers of that one dashboard page.
 
 **Refinement to do:** exclude the same 2 classes (or a broader
@@ -282,8 +282,8 @@ correlation between mean_score and each of Apophenia's 3 risk indicators
 the 5 shared subzones.
 
 **Result:** mean_score correlates negatively with psa_incidence_historical
-(r = -0.86) and with distance_port_km (r = -0.55), and is essentially
-uncorrelated with base_risk_weight (r = 0.17). Read at face value, this
+(r = -0.85) and with distance_port_km (r = -0.52), and is essentially
+uncorrelated with base_risk_weight (r = 0.16). Read at face value, this
 would suggest operational risk in Apophenia's model is more logistical
 (distance, historical incidents) than agronomic (soil suitability) — the
 subzones with the best soil scores are not obviously the ones Apophenia
@@ -382,15 +382,57 @@ pre-change backup:
   (a changed soil order/texture/drainage/depth value shifting the
   weighted score) — none crossed a `suitability_level` bin boundary in
   a way that changed the count materially.
-- Ripple into aggregates (`subzone_summary`, `cross_project_comparison`,
-  `subzone_climate_risk`, `expansion_candidates`): small shifts only,
-  on the order of 0.1-1.5% in mean scores and correlation coefficients
-  per subzone (e.g. Opotiki's mean score) — consistent with 35 changed
-  rows out of 21,491, not a sign of a broader problem.
+- Ripple into aggregates, diffed exactly (pre-change backup vs. current
+  `terroir.db`, not estimated):
+  - `subzone_summary`: only Opotiki changed — mean_score 7.07 → 7.18
+    (+1.6%), Marginal_pct 15.4% → 14.1%, Excellent_pct 55.1% → 56.4%
+    (its small 78-parcel count makes it the most boundary-sensitive
+    subzone). Tauranga's `parcel_count` dropped 2,336 → 2,335 (the 1
+    subzone reassignment above moved a parcel out of Tauranga). The
+    other 3 named subzones (Te Puke, Pongakawa, Katikati) are byte-for-
+    byte unchanged.
+  - `cross_project_comparison` / correlation coefficients: since n=5,
+    Opotiki's single mean_score shift moved all 3 Pearson correlations
+    by one to three hundredths — psa_incidence_historical r = -0.86 →
+    -0.85, distance_port_km r = -0.55 → -0.52, base_risk_weight r =
+    0.17 → 0.16 (all now corrected above and on the dashboard, which
+    computes these live rather than hardcoding them). This is a larger
+    *relative* move (up to ~6% on distance_port_km) than the underlying
+    ~1.6% mean_score shift that drives it — expected given a Pearson r
+    over only 5 points has high leverage per point, and stated here
+    rather than left at a vaguer "small" characterisation.
+  - `expansion_candidates`: 13,041 → 13,040 total; subzone breakdown
+    shifted by ±1-2 parcels per subzone (Tauranga 1,972→1,973, Te Puke
+    407→406, Opotiki 40→41, outside-5-named 10,205→10,203); urban/
+    settlement-excluded count 1,658→1,662 (12.7% either way); the
+    dashboard-displayed remaining count 11,383→11,378.
+  - `suitability_levels_summary`: Good 3,889→3,890, Marginal
+    1,188→1,187 (Excellent unchanged at 16,414) — all percentages
+    unchanged at 1 decimal place.
 
-All drift is small, fully explained by the single anticipated
-boundary-flip mechanism, and non-crashing — no script errors, no row
-count changes anywhere except the 1 subzone reassignment above.
+All of this is now corrected everywhere it was previously cited
+(`docs/methodology.md`, `dashboard/README.md`, `data/processed/README.md`,
+`src/README.md`, and the `3_Expansion_Candidates.py` /
+`4_Apophenia_Comparison.py` docstrings) — cross-checked number by number
+against the current database, not assumed unaffected. All drift is
+small, fully explained by the single anticipated boundary-flip
+mechanism, and non-crashing — no script errors, no row count changes
+anywhere except the 1 subzone reassignment above.
+
+**Limitation, not a bug:** a small fraction of parcels sit near a
+soil/LCDB/subzone polygon boundary closely enough that spatial-join
+assignment (`predicate="within"` against a computed centroid) is
+sensitive to exactly where that centroid lands — and simplifying a
+parcel's boundary geometry can shift its centroid by enough to cross
+one. This is an inherent precision limit of centroid-based spatial
+joins, not something a different tolerance value "fixes": any nonzero
+simplification tolerance carries some nonzero risk of this for parcels
+already sitting close to a boundary, and Opotiki's small, boundary-
+dense parcel set (78 parcels total) makes it the subzone most exposed
+to it, as seen above. Same disclosure standard as this document's own DEM/waterlogging-proxy
+note above and `docs/data_sources.md`'s PAW-exclusion note: a known,
+bounded modelling limitation, checked and quantified rather than
+hidden.
 
 **Cold-start before/after** (same methodology as the payload-size
 measurements above: fresh server process via

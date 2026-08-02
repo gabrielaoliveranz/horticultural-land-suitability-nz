@@ -39,7 +39,7 @@ Nine scripts so far, all following the Python header standard in
   a new `parcel_scores` table (keyed on source_id) in
   `data/processed/terroir.db` — 21,491 parcels scored.
 - `05_subzone_summary.py` — scoring. Joins `parcel_scores` with
-  `parcel_attributes.subzone`, filters to the 5 named subzones (4,104
+  `parcel_attributes.subzone`, filters to the 5 named subzones (4,103
   parcels), and computes parcel count, mean score, and %
   Excellent/Good/Marginal per subzone, saved as `subzone_summary`. Bins
   with `right=False` so a score of exactly 5.0 or 8.0 lands in the
@@ -66,8 +66,8 @@ Nine scripts so far, all following the Python header standard in
   the 5 named subzones) — Excellent 76.4%, Good 18.1%, Marginal 5.5% —
   saved as `suitability_levels_summary`; (2) filters to
   suitability_score >= 8.0 AND not already LCDB-classified as orchard/
-  vineyard/perennial crop, saved as `expansion_candidates` — 13,041
-  parcels (79.5% of the Excellent tier). Same `right=False` boundary fix
+  vineyard/perennial crop, saved as `expansion_candidates` — 13,040
+  parcels (79.4% of the Excellent tier). Same `right=False` boundary fix
   as `05_subzone_summary.py`. See `docs/methodology.md` ("Regional
   summary and expansion candidates (business questions 1 and 2)").
 
