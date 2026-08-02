@@ -329,7 +329,7 @@ with st.spinner("Loading map..."):
 # (colour and border), not just colour.
 legend_swatches = "".join(
     f'<span style="display:inline-flex; align-items:center; margin-right:1.5rem;">'
-    f'<span style="display:inline-block; width:14px; height:14px; border-radius:3px; '
+    f'<span style="display:inline-block; width:14px; height:14px; border-radius:{theme.CARD_RADIUS}; '
     f'background:rgb({r},{g},{b}); border:{LEVEL_LINE_WIDTHS[level] * 1.5}px solid rgba(0,0,0,0.45); '
     f'margin-right:0.4rem;"></span>{level}</span>'
     for level, (r, g, b, _a) in LEVEL_COLORS.items()

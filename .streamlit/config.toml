@@ -1,11 +1,12 @@
 # Terroir dashboard theme.
 #
 # The 5 colours confirmed in PRODUCT.md's "Brand Commitments" are set
-# here, plus textColor (see note below — no longer left at Streamlit's
-# default). Font family is still left at Streamlit's default — not
-# confirmed, and inventing it would be an unrequested brand decision.
-# See docs/methodology.md's "Dashboard tool: Streamlit" for why
-# Streamlit was chosen at all.
+# here, plus textColor (see note below). headingFont loads Archivo (the
+# reference case-study design's display face — see docs/ for the
+# extraction) via Google Fonts; the body font stays at Streamlit's
+# default (a weight-availability check, not an unconfirmed brand
+# decision — see dashboard/README.md). See docs/methodology.md's
+# "Dashboard tool: Streamlit" for why Streamlit was chosen at all.
 #
 # Contrast checked against backgroundColor (WCAG): primary green
 # 7.76:1 (passes body text, >=4.5:1). Lima green (1.54:1) and SunGold
@@ -26,12 +27,24 @@
 # close to the original (body text contrast actually improves, from
 # 10.19:1 to ~14.8:1, since it renders at full opacity, not blended).
 [theme]
-textColor = "#14151A"
-primaryColor = "#0B4F3D"           # primary green — buttons, links, active elements
-linkColor = "#0B4F3D"              # explicit — did not reliably inherit from
-                                     # primaryColor for markdown links / st.page_link
-                                     # in testing (both rendered browser-default
-                                     # blue #0000EE without this)
+textColor = "#181410"              # warm ink — see theme.py's TEXT for the
+                                     # dataframe-header WCAG derivation
+primaryColor = "#915117"           # terracotta ACCENT — was stale #0B4F3D (the
+                                     # old green), left over from before ACCENT
+                                     # became the general accent. Not previously
+                                     # a visible bug (every surface that matters
+                                     # is CSS-overridden to theme.ACCENT already,
+                                     # confirmed live), but fragile: any future
+                                     # native widget without a matching CSS
+                                     # override would have silently rendered
+                                     # green. Fixed for robustness, not a visual
+                                     # regression fix.
+linkColor = "#78420F"              # darker terracotta, matching the reference
+                                     # design's own light-background link/kicker
+                                     # colour — explicit because st.page_link and
+                                     # markdown links didn't reliably inherit
+                                     # primaryColor in testing (rendered browser-
+                                     # default blue #0000EE without this)
 backgroundColor = "#E8E8E3"        # confirmed background
 secondaryBackgroundColor = "#E8E8E3"  # same value, deliberately: only one
                                         # background hex was confirmed, and a
@@ -44,7 +57,22 @@ greenColor = "#0B4F3D"
 orangeColor = "#F2A900"            # SunGold gold mapped to the closest semantic slot
 redColor = "#C0392B"               # alert red
 
-chartCategoricalColors = ["#0B4F3D", "#A8C93A", "#F2A900", "#C0392B", "#57606A"]
+# Terracotta first, not green — green isn't used anywhere in the general
+# UI (see theme.py's Colour-role rule); it was leading this list only
+# because it happened to be primaryColor at the time.
+chartCategoricalColors = ["#915117", "#A8C93A", "#F2A900", "#C0392B", "#57606A"]
+
+# Sharp, flat radius — see theme.py's Surfaces section for the reference-
+# design derivation (was Streamlit's ~8px rounded default).
+baseRadius = "2px"
+buttonRadius = "2px"
+
+# Archivo for headings only (reference design's display face) via Google
+# Fonts, loaded natively through this config token — no @font-face CSS
+# needed. Body font left at Streamlit's own default: verify it covers
+# weight 500 before assuming "Source Sans 3" needs pinning explicitly
+# (see dashboard/README.md for the outcome of that check).
+headingFont = "Archivo:https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&display=swap"
 
 [theme.sidebar]
 backgroundColor = "#E8E8E3"        # sidebar doesn't inherit the top-level

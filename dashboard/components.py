@@ -148,22 +148,30 @@ def card_css(*keys, padding="1.5rem 1.75rem", hoverable=False):
     already manages its own internal header/body spacing — the full
     default would double up the gap (checked visually, not assumed).
 
-    `hoverable=True` adds a subtle lift on :hover (a slightly stronger
-    two-layer shadow, theme.CARD_SHADOW_HOVER, plus a small upward
-    translate) — used for KPI cards specifically, which are meant to
-    read as small independent tiles; not the default, since it would be
-    an odd affordance on non-interactive surfaces like the expander
-    cards or the Climate Risk insights card (hovering them doesn't do
-    anything, so a lift there would suggest an interaction that isn't
-    there).
+    `hoverable=True` darkens the card's border toward theme.ACCENT on
+    :hover (theme.CARD_BORDER_HOVER) — used for KPI cards specifically,
+    which are meant to read as small independent tiles; not the
+    default, since it would be an odd affordance on non-interactive
+    surfaces like the expander cards or the Climate Risk insights card
+    (hovering them doesn't do anything, so a cue there would suggest an
+    interaction that isn't there).
+
+    This used to be a shadow-based lift (a stronger box-shadow plus a
+    small upward translate). Removed along with every other shadow in
+    the app (see theme.py's Surfaces section — the reference design
+    this pass follows uses zero box-shadow anywhere, depth comes from
+    background/border contrast only): with CARD_SHADOW_HOVER now
+    "none", a translateY lift had nothing to justify it — a flat card
+    floating upward with no shadow underneath reads as a rendering bug,
+    not depth. A border-colour cue is the honest replacement, not an
+    approximation of the old effect.
     """
     selectors = ", ".join(f".st-key-{k}" for k in keys)
     hover_css = ""
     if hoverable:
         hover_css = (
-            f"{selectors} {{ transition: box-shadow 0.18s ease, transform 0.18s ease; }}"
-            f"{selectors}:hover {{ box-shadow:{theme.CARD_SHADOW_HOVER}; "
-            f"transform: translateY(-3px); }}"
+            f"{selectors} {{ transition: border-color 0.18s ease; }}"
+            f"{selectors}:hover {{ border:{theme.CARD_BORDER_HOVER}; }}"
         )
     st.html(
         f"<style>{selectors} {{ background:{theme.CARD_BG}; border:{theme.CARD_BORDER}; "
@@ -194,13 +202,20 @@ def section_header(text):
     unrelated new style bolted on. Text colour is explicit theme.TEXT
     now (matches the global textColor theme setting) rather than a
     separate hardcoded value.
+
+    font-family is explicit theme.HEADING_FONT (Archivo): [theme]
+    headingFont in config.toml only reaches Streamlit's own heading
+    widgets (st.title/header/subheader) — this is a plain styled <span>,
+    not one of those, so it doesn't inherit that setting automatically
+    and needs the family stated here directly.
     """
     st.html(
         f'<div style="display:flex; align-items:center; gap:0.65rem; '
         f'margin:2rem 0 0.9rem;">'
         f'<div style="width:5px; height:1.5rem; background:{theme.ACCENT}; '
         f'border-radius:2px; flex-shrink:0;"></div>'
-        f'<span style="font-size:28px; font-weight:600; letter-spacing:-0.015em; '
+        f'<span style="font-family:{theme.HEADING_FONT}; font-size:28px; '
+        f'font-weight:700; letter-spacing:-0.015em; '
         f'color:{theme.TEXT};">{text}</span></div>'
     )
 
@@ -256,7 +271,7 @@ def callout(kind, message):
     variant = theme.CALLOUTS[kind]
     st.html(
         f'<div style="background:{variant["bg"]}; border-left:3px solid {variant["accent"]}; '
-        f'border-radius:6px; padding:1rem 1.25rem; margin:0.5rem 0; '
+        f'border-radius:{theme.CARD_RADIUS}; padding:1rem 1.25rem; margin:0.5rem 0; '
         f'color:{theme.TEXT};">{_markdown_to_html(message)}</div>'
     )
 
@@ -524,12 +539,12 @@ def footer():
         <style>
         .st-key-site-footer {{ margin-top: 0.5rem; color: {theme.TEXT}; }}
         .st-key-site-footer .footer-heading {{
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            font-size: 0.75rem;
-            color: {theme.TEXT_MUTED};
+            text-transform: {theme.KICKER_TEXT_TRANSFORM};
+            letter-spacing: {theme.KICKER_LETTER_SPACING};
+            font-size: {theme.KICKER_SIZE};
+            color: {theme.KICKER_COLOR};
             margin: 0 0 0.9rem;
-            font-weight: 600;
+            font-weight: {theme.KICKER_WEIGHT};
         }}
         .st-key-site-footer .footer-line {{ margin-bottom: 0.55rem; display: flex; align-items: center; gap: 0.5rem; }}
         .st-key-site-footer .footer-icon {{
@@ -581,19 +596,21 @@ def footer():
             display: inline-block;
             margin-top: 2.25rem;
             padding: 0.6rem 1.1rem;
-            border: 1px solid {theme.rgba(theme.ACCENT, 0.25)};
-            border-radius: 6px;
-            color: {theme.TEXT_MUTED};
+            background: {theme.BUTTON_OUTLINE_BG};
+            border: {theme.BUTTON_OUTLINE_BORDER};
+            border-radius: {theme.CARD_RADIUS};
+            color: {theme.BUTTON_OUTLINE_TEXT};
             font-weight: 600;
             font-size: 0.9rem;
             cursor: not-allowed;
             user-select: none;
+            opacity: 0.6;
         }}
         .footer-cta-soon {{ font-weight: 400; opacity: 0.8; }}
         .footer-copyright {{
             margin-top: 1.75rem;
             padding-top: 1.5rem;
-            border-top: 1px solid {theme.rgba(theme.ACCENT, 0.15)};
+            border-top: {theme.CARD_BORDER};
             font-size: 0.8rem;
             color: {theme.TEXT_MUTED};
         }}

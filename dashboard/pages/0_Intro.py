@@ -91,6 +91,12 @@ accent_divider()
 # text-only link (even in the accent colour) didn't read as "the" thing
 # to click next to a page full of body copy. White-on-ACCENT measures
 # 6.19:1 (see theme.py's Buttons section), well past WCAG.
+#
+# The hover state used to lift on translateY(-2px) with a stronger drop
+# shadow underneath. Dropped along with every shadow in the app (see
+# theme.py's Surfaces section) — a button floating upward with no
+# shadow to justify the lift reads as a rendering bug, not an
+# interaction cue. Hover is now a background-colour darken only.
 with st.container(key="cta-explore"):
     st.page_link(
         "pages/1_Overview.py",
@@ -107,16 +113,14 @@ st.html(
         background: {theme.BUTTON_BG} !important;
         color: {theme.BUTTON_TEXT} !important;
         padding: 0.9rem 1.85rem;
-        border-radius: 8px;
+        border-radius: {theme.BUTTON_RADIUS};
         font-size: 1.05rem;
         text-decoration: none !important;
         box-shadow: {theme.BUTTON_SHADOW};
-        transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+        transition: background-color 0.15s ease;
     }}
     .st-key-cta-explore a:hover {{
         background: {theme.BUTTON_BG_HOVER} !important;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px {theme.rgba(theme.ACCENT, 0.35)};
     }}
     .st-key-cta-explore a p {{ color: {theme.BUTTON_TEXT} !important; margin: 0; font-weight: 600; }}
     .st-key-cta-explore a span[data-testid="stIconMaterial"] {{ color: {theme.BUTTON_TEXT} !important; }}

@@ -78,12 +78,16 @@ BACKGROUND = "#E8E8E3"
 # over its own near-white header background (empirically derived by
 # measuring two different textColor values and solving for the blend
 # ratio — see .streamlit/config.toml's own note for the full numbers).
-# #14151A is deep enough that the blended header clears 4.5:1 with
-# margin (measured 4.63:1) while staying the same neutral-slate family
-# as the original, not a different hue. Set as [theme] textColor in
+#
+# Warm ink, not the reference design's literal #201C17: that value was
+# checked and rejected — it drops the dataframe-header blend to 4.46:1,
+# under the 4.5:1 this token exists to guarantee. #181410 is hue-matched
+# to the reference's warm-ink family but luminance-matched (darker than
+# #201C17) to preserve the fix: verified 4.79:1 on the header blend and
+# 14.90:1 as plain body text on BACKGROUND. Set as [theme] textColor in
 # .streamlit/config.toml (the actual global effect) and mirrored here
 # so components.py doesn't hardcode it separately.
-TEXT = "#14151A"
+TEXT = "#181410"
 
 
 def _hex_to_rgb(hex_color):
@@ -114,26 +118,56 @@ def blend(hex_fg, hex_bg, alpha):
 # ---- Text ------------------------------------------------------------------
 TEXT_MUTED = rgba(TEXT, 0.62)
 
+# Opaque mid-emphasis text — for contexts an rgba() alpha-blend can't
+# reach (SVG/canvas fills, anywhere a solid colour is required rather
+# than a translucent one), same role TEXT_MUTED plays for normal HTML
+# text. Derived via blend(), not copied from the reference design's own
+# #4A443C — this project's existing pattern computes every mid-tone from
+# TEXT rather than picking a freehand swatch.
+TEXT_SECONDARY = blend(TEXT, BACKGROUND, 0.78)
+
 # Chart axis/tick label colour: Vega-Lite's own default grey measured at
 # 3.02:1 against BACKGROUND — a real WCAG failure (confirmed via DOM
-# scan, not assumed), not just aesthetically flat. This is a muted grey
-# deliberately quieter than full TEXT (axis labels are supporting
-# content, not body text), computed to clear 4.5:1 with margin
-# (verified 5.44:1) rather than picked freehand.
-CHART_AXIS_COLOR = "#5A5C62"
+# scan, not assumed), not just aesthetically flat. Warm grey, matching
+# the reference design's own axis/caption tone (was #5A5C62, a cooler
+# grey) — re-verified 5.92:1 against BACKGROUND, an improvement on the
+# previous 5.44:1, not just a hue change.
+CHART_AXIS_COLOR = "#5C564A"
 
 # ---- Surfaces ----------------------------------------------------------
+# Sharp, flat, per the reference design's editorial system (was 12px
+# rounded + a soft two-layer shadow). Reference measured 2px everywhere
+# (cards, buttons, badges) and zero box-shadow anywhere — depth comes
+# from background/border contrast only, not elevation.
 CARD_BG = "#FFFFFF"
-CARD_BORDER = f"1px solid {rgba(ACCENT, 0.12)}"
-CARD_SHADOW = f"0 2px 10px {rgba(ACCENT, 0.10)}, 0 1px 2px {rgba(ACCENT, 0.06)}"
-# Stronger two-layer shadow for the KPI-card hover lift — same shape as
-# CARD_SHADOW (tight layer + soft diffuse layer), just deeper, so a
-# hovered card reads as physically closer rather than just "different".
-CARD_SHADOW_HOVER = f"0 8px 20px {rgba(ACCENT, 0.16)}, 0 2px 6px {rgba(ACCENT, 0.10)}"
-CARD_RADIUS = "12px"
+CARD_RADIUS = "2px"
+CARD_SHADOW = "none"
+CARD_SHADOW_HOVER = "none"
 
-DIVIDER_COLOR = ACCENT
-DIVIDER_OPACITY = 0.35
+# PHILOSOPHY: the reference design restricts ACCENT to interactive/
+# emphasis elements only (buttons, links, kickers, highlight badges) and
+# uses neutral ink for structure (borders, dividers) — it does not tint
+# structural elements with the accent colour the way this file used to.
+# CARD_BORDER/DIVIDER_COLOR below follow that discipline now; HOVER_TINT
+# and the Interactive-controls/Buttons sections further down stay
+# ACCENT-based on purpose, since hover/focus/CTA *are* the interactive
+# moments the rule reserves ACCENT for.
+CARD_BORDER = f"1px solid {rgba(TEXT, 0.18)}"
+# Border-colour hover cue, replacing the old shadow-based "lift" — with
+# CARD_SHADOW_HOVER now "none", a translateY lift had nothing to justify
+# it (a flat card floating with zero shadow reads as a bug, not depth).
+# This is ACCENT-tinted deliberately: hover is the interactive moment.
+CARD_BORDER_HOVER = f"1px solid {rgba(ACCENT, 0.4)}"
+
+DIVIDER_COLOR = TEXT
+# Matches CARD_BORDER's own alpha (0.18) rather than a separate freehand
+# value — one consistent "structural neutral" weight reused for both
+# card borders and section-break rules, not two different softnesses
+# invented independently. Was ACCENT @ 0.35 (a translucent brand-tinted
+# rule); accent_divider() runs many times per page, closer in role to
+# the reference's own subtle internal dividers (`1px solid #C9C6BD`)
+# than its one-off strong section breaks (`1.5px solid #201C17`).
+DIVIDER_OPACITY = 0.18
 
 HOVER_TINT = rgba(ACCENT, 0.12)
 
@@ -159,7 +193,18 @@ INPUT_FOCUS_RING = f"0 0 0 3px {rgba(ACCENT, 0.18)}"
 BUTTON_BG = ACCENT
 BUTTON_TEXT = "#FFFFFF"
 BUTTON_BG_HOVER = blend(ACCENT, "#000000", 0.85)  # ~15% darker
-BUTTON_SHADOW = f"0 4px 14px {rgba(ACCENT, 0.28)}"
+BUTTON_SHADOW = "none"  # was a soft accent-tinted shadow — flat, per Surfaces above
+BUTTON_RADIUS = CARD_RADIUS  # reference uses one shared 2px radius for cards AND buttons
+
+# Secondary/outline variant (reference's "GitHub repo" / "LinkedIn"
+# style buttons: transparent fill, ink border, no shadow) — for any
+# action that shouldn't compete with a page's one primary CTA. Neutral
+# ink, not ACCENT, per the Surfaces philosophy note: an outline button is
+# structural chrome around a label, not itself the interactive emphasis.
+BUTTON_OUTLINE_BG = "transparent"
+BUTTON_OUTLINE_BORDER = f"1.5px solid {TEXT}"
+BUTTON_OUTLINE_TEXT = TEXT
+BUTTON_OUTLINE_BG_HOVER = rgba(TEXT, 0.06)
 
 # ---- Callout/alert variants -------------------------------------------
 # Each callout pairs a light tint of one accent colour (background) with
@@ -187,3 +232,25 @@ CALLOUTS = {
 SPACE_SM = "0.75rem"
 SPACE_MD = "1.25rem"
 SPACE_LG = "2rem"
+
+# ---- Typography (display face) --------------------------------------------
+# Archivo is loaded as [theme] headingFont in .streamlit/config.toml,
+# which covers every *native* Streamlit heading (st.title/header/
+# subheader) automatically. This constant is for the handful of custom
+# CSS-rendered elements that mimic a heading without being a real
+# Streamlit heading widget (section_header()'s span) — those don't
+# inherit headingFont and need the family stated explicitly.
+HEADING_FONT = "'Archivo', sans-serif"
+
+# ---- Kicker / eyebrow label -------------------------------------------
+# Uppercase small-caps-style label (reference design's section kickers
+# and the "MOST SIGNIFICANT" badge chip). Colour is adopted directly
+# from the reference's #78420F, not derived via blend() from ACCENT —
+# being explicit that this one is a chosen swatch, not computed: checked
+# it clears WCAG regardless (6.61:1 on BACKGROUND, 7.20:1 on CARD_BG,
+# both better margin than plain ACCENT's 5.03:1).
+KICKER_COLOR = "#78420F"
+KICKER_WEIGHT = 700
+KICKER_SIZE = "13px"
+KICKER_LETTER_SPACING = "0.06em"
+KICKER_TEXT_TRANSFORM = "uppercase"
