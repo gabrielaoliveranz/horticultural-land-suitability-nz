@@ -71,6 +71,7 @@ Nine scripts so far, all following the Python header standard in
   as `05_subzone_summary.py`. See `docs/methodology.md` ("Regional
   summary and expansion candidates (business questions 1 and 2)").
 
-All ingestion, joining, scoring, and cross-project comparison work for
-Fase 2/3 is now in place. Fase 4 (insights) and Fase 5 (Streamlit
-dashboard) are still to be started.
+All ingestion, joining, scoring, regional-summary/expansion, and
+cross-project comparison work (Fase 2-4) is in place. Fase 5 (Streamlit
+dashboard) is built — 6 pages, see `dashboard/README.md`. Fase 6 (case
+study write-up) is the remaining stage — see `case_study/README.md`.

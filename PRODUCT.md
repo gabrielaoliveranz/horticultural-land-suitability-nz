@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-Streamlit (locked in Fase 0; see `docs/methodology.md`, "Dashboard tool: Streamlit" — not to be revisited). Python data pipeline (`src/`) already built and produces `data/processed/terroir.db`; the Streamlit dashboard itself has not been built yet. Streamlit dashboard deployed via Streamlit Community Cloud. Alongside it, a static HTML/CSS case study page, deployed via GitHub Pages (or alongside the existing Vercel setup), narrating the project and linking to the live dashboard.
+Streamlit (locked in Fase 0; see `docs/methodology.md`, "Dashboard tool: Streamlit" — not to be revisited). Python data pipeline (`src/`) built and produces `data/processed/terroir.db`; the Streamlit dashboard is built too — 6 pages, verified working locally (see `dashboard/README.md`), not yet deployed to Streamlit Community Cloud. Alongside it, a static HTML/CSS case study page, deployed via GitHub Pages (or alongside the existing Vercel setup), narrating the project and linking to the live dashboard — a visual design reference exists (`case_study/reference_design.html`) but the narrated write-up itself hasn't been built, and neither the dashboard nor a case study page has been deployed yet (see root `README.md`'s Roadmap for current status).
 
 ## Users
 
@@ -88,7 +88,7 @@ smaller subset going deeper into the methodology/code or the live app.
 
 ## Evidence on Hand
 
-Real, already-computed results in `data/processed/terroir.db`: 22,834 LINZ parcels ingested across 4 territorial authorities, 21,491 scored, tables for `parcel_attributes`, `parcel_scores`, `subzone_summary`, `suitability_levels_summary`, `expansion_candidates`, `cross_project_comparison`, and `subzone_climate_risk`. Full reasoning and figures documented in `docs/methodology.md` and `docs/data_sources.md`. No testimonials, press, or case-study write-ups exist yet — do not fabricate any. No live deployment exists yet — both the Streamlit dashboard and the HTML case study are planned but not yet built or deployed.
+Real, already-computed results in `data/processed/terroir.db`: 22,834 LINZ parcels ingested across 4 territorial authorities, 21,491 scored, tables for `parcel_attributes`, `parcel_scores`, `subzone_summary`, `suitability_levels_summary`, `expansion_candidates`, `cross_project_comparison`, and `subzone_climate_risk`. Full reasoning and figures documented in `docs/methodology.md` and `docs/data_sources.md`. The Streamlit dashboard (6 pages) is built and verified working locally — see `dashboard/README.md`. No testimonials, press, or case-study write-ups exist yet — do not fabricate any (a visual design reference for the case study exists at `case_study/reference_design.html`, but the narrated write-up itself doesn't). No live deployment exists yet for either the dashboard or the case study — see root `README.md`'s Roadmap for current status.
 
 ## Product Principles
 

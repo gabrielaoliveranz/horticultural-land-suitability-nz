@@ -22,5 +22,8 @@ combined with drainage is used as a proxy instead (see
 
 ## Status
 
-Access confirmed (Fase 0). No files downloaded into this folder yet —
-ingestion is Fase 2, not started.
+Access confirmed (Fase 0). Ingestion is complete (`src/02_ingest_soil_lcdb.py`,
+94.1% match rate) — this folder stays empty by design, not because
+ingestion hasn't happened: the pipeline fetches WFS responses live on
+each run and writes straight to `parcel_attributes` in
+`data/processed/terroir.db`, it never caches a raw copy here.

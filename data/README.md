@@ -7,8 +7,12 @@ processed, and external sources.
 
 Source access confirmed for all evaluated sources (Fase 0 complete) —
 LINZ and S-map confirmed via WFS, NIWA evaluated and dropped in favour
-of Open-Meteo. See `docs/data_sources.md`. No data has actually been
-ingested into this folder yet — that's Fase 2, not started.
+of Open-Meteo. See `docs/data_sources.md`. Ingestion (Fase 2) and
+scoring (Fase 3) are both complete: `processed/` holds
+`parcels_linz.geojson` and `terroir.db` (7 tables), `external/` holds
+the one Apophenia corridor CSV used for the cross-project comparison —
+see each subfolder's own README for detail. `raw/` stays empty by
+design (see below), not because ingestion hasn't happened.
 
 ## Structure
 

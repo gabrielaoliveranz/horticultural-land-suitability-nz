@@ -111,18 +111,24 @@ imported the same way from a page script (`sys.path.insert(...)` +
 each page script's own directory on `sys.path`, not `dashboard/` —
 confirmed by testing a bare import first, which failed):
 
-- **`theme.TEXT` (`#14151A`)** — replaces Streamlit's unconfirmed
+- **`theme.TEXT` (`#181410`)** — replaces Streamlit's unconfirmed
   default (`#31333F`). A comprehensive contrast audit (below) found
   `st.dataframe`'s canvas-rendered column headers failing WCAG at
   3.59:1 — CSS can't reach canvas content, so the only fix was
   darkening the global theme token. Header text renders at ~60%
   opacity of `textColor` (empirically derived, not documented by
-  Streamlit); `#14151A` clears 4.5:1 with margin (measured 4.63:1)
-  while keeping the same neutral-slate family as the original.
-- **`theme.CHART_AXIS_COLOR` (`#5A5C62`)** — Vega-Lite's default axis
+  Streamlit); originally `#14151A` (a cool neutral-slate), moved to
+  `#181410` (warm ink) in the reference-design pass — hue-matched to
+  that design's ink family but luminance-matched to `#14151A`, not
+  copied at face value, to keep clearing the header contrast fix
+  (verified 4.79:1, not the reference's own literal ink value, which
+  measured 4.46:1 and would have regressed it).
+- **`theme.CHART_AXIS_COLOR` (`#5C564A`)** — Vega-Lite's default axis
   label grey measured 3.02:1 against the page background, a real
   failure. Applied via Altair's `axis=alt.Axis(labelColor=...,
-  titleColor=...)`, computed to clear 4.5:1 with margin (5.44:1).
+  titleColor=...)`, computed to clear 4.5:1 with margin. Originally a
+  cooler `#5A5C62` (5.44:1), moved to this warmer grey in the
+  reference-design pass (5.92:1 — an improvement, not just a hue swap).
 - **`callout(kind, message)`** — replaces `st.warning()`/`st.info()`.
   Streamlit's defaults (mustard yellow, light blue) aren't part of the
   confirmed palette and don't match anything else in the app; the
@@ -133,11 +139,18 @@ confirmed by testing a bare import first, which failed):
 - **`metric_row(metrics)`** — one elevated card per KPI via
   `st.columns`, not one shared container. Used by Overview (3 metrics)
   and Expansion Candidates (1, for consistency).
-- **`card_css(*keys, padding=...)`** — elevated-surface styling (solid
-  white background, two-layer soft shadow, generous padding). Went
-  through three rounds before landing here: a near-invisible
-  border+tint, a bumped-opacity border+tint that still read as flat,
-  and this — a real surface, not a tint over the page background.
+- **`card_css(*keys, padding=...)`** — surface styling (solid white
+  background, a neutral-ink border, generous padding). Went through
+  several rounds: a near-invisible border+tint, a bumped-opacity
+  border+tint that still read as flat, a soft two-layer shadow that
+  stuck for a while, and — in the reference-design pass — sharp 2px
+  corners with the shadow dropped entirely (that design uses zero
+  box-shadow anywhere; depth comes from background/border contrast,
+  not elevation) and the border switched from accent-tinted to neutral
+  ink, reserving the accent colour for interactive/emphasis elements
+  only. `hoverable=True` used to lift the card with a stronger shadow;
+  with no shadow left to deepen, it now darkens the border toward
+  `theme.ACCENT` instead (`CARD_BORDER_HOVER`).
 - **`accent_divider()`** — the straight-line accent-coloured rule from
   `0_Intro.py`'s original polish pass, now the one section-break
   treatment on every page (one per page, at its clearest content-type
@@ -188,6 +201,20 @@ confirmed by testing a bare import first, which failed):
   disclaimer rewritten in plain business language — no "n=5", no
   "provenance", no internal file paths or script names leaking into
   captions. Every factual claim is unchanged.
+- **Reference-design pass** (tokens extracted from a Claude-built case
+  study mockup, `case_study/reference_design.html` — see that file's
+  own status note, this is a visual reference, not the live case
+  study): `theme.HEADING_FONT` ('Archivo', loaded as `[theme]
+  headingFont` in `.streamlit/config.toml` via Google Fonts — verified
+  actually loading, not just configured, via `document.fonts`), sharp
+  `CARD_RADIUS`/`BUTTON_RADIUS` (2px, was 12px), zero shadows anywhere,
+  `theme.BUTTON_OUTLINE_*` (a transparent/ink-border secondary button
+  variant, used live on the footer's case-study CTA), and
+  `theme.KICKER_*` (the uppercase eyebrow-label treatment, used on the
+  footer's 3 column headings). Not matched from the reference: fluid
+  clamp()-scaled hero typography and full-bleed section backgrounds —
+  neither is achievable inside Streamlit's fixed-width, persistent-
+  sidebar layout without fragile CSS hacking, so neither was faked.
 
 ### Contrast audit
 

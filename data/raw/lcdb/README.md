@@ -12,5 +12,15 @@ same LRIS_API_KEY as S-map. WFS 2.0.0.
 Target class: "Orchard, Vineyard or Other Perennial Crop" (code 33).
 
 **Licence:** Creative Commons, by Manaaki Whenua — Landcare Research.
+Flagged, not resolved: `docs/data_sources.md`'s S-map section states an
+"open licence" explicitly scoped to its own 4 layers only — it doesn't
+separately confirm LCDB's licence, so this line and that file aren't
+fully reconciled. Left as-is here rather than silently deciding which
+is right.
 
-**Status:** Source confirmed (Fase 2 exploration). No data ingested yet.
+**Status:** Source confirmed (Fase 0/2 exploration). Ingestion is
+complete (`src/02_ingest_soil_lcdb.py`, 99.7% match rate) — this folder
+stays empty by design, not because ingestion hasn't happened: the
+pipeline fetches WFS responses live on each run and writes straight to
+`parcel_attributes.lcdb_class_2023` in `data/processed/terroir.db`, it
+never caches a raw copy here.
