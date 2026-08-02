@@ -1,17 +1,32 @@
 # Terroir dashboard theme.
 #
-# Only the 5 colours confirmed in PRODUCT.md's "Brand Commitments" are
-# set here. textColor and font family are deliberately left at
-# Streamlit's defaults — neither was confirmed, and inventing them here
-# would be an unrequested brand decision. See docs/methodology.md's
-# "Dashboard tool: Streamlit" for why Streamlit was chosen at all.
+# The 5 colours confirmed in PRODUCT.md's "Brand Commitments" are set
+# here, plus textColor (see note below — no longer left at Streamlit's
+# default). Font family is still left at Streamlit's default — not
+# confirmed, and inventing it would be an unrequested brand decision.
+# See docs/methodology.md's "Dashboard tool: Streamlit" for why
+# Streamlit was chosen at all.
 #
 # Contrast checked against backgroundColor (WCAG): primary green
 # 7.76:1 (passes body text, >=4.5:1). Lima green (1.54:1) and SunGold
 # gold (1.63:1) both fail as text/foreground colours on this background
 # — reserve them for fills, badges, or chart series, never body text.
-
+#
+# textColor: a comprehensive contrast audit found st.dataframe's column
+# headers failing WCAG (3.59:1 measured directly from rendered pixels —
+# CSS can't reach canvas-rendered grid content, so this had to be
+# fixed via Streamlit's own theme token instead). Header text renders
+# at ~60% opacity of textColor blended over its own near-white header
+# background (empirically derived: measured header text color at two
+# different textColor values, solved for the blend ratio, confirmed it
+# held across both). The original default (#31333F, i.e. rgb(49,51,63))
+# produced a 3.59:1 header — failing. #14151A is the same neutral slate
+# family, just deep enough that the ~60%-blended header clears 4.5:1
+# with margin (predicted 4.70:1) while keeping body text's character
+# close to the original (body text contrast actually improves, from
+# 10.19:1 to ~14.8:1, since it renders at full opacity, not blended).
 [theme]
+textColor = "#14151A"
 primaryColor = "#0B4F3D"           # primary green — buttons, links, active elements
 linkColor = "#0B4F3D"              # explicit — did not reliably inherit from
                                      # primaryColor for markdown links / st.page_link

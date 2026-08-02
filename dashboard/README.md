@@ -14,11 +14,19 @@ explicitly in `streamlit_app.py`, not inferred from filenames.
 ```
 dashboard/
 ├── streamlit_app.py            # entrypoint — defines pages, calls st.navigation
+├── theme.py                     # design tokens ONLY — colours, spacing, shadow,
+│                                 # callout variants. No Streamlit calls.
+├── components.py                # rendering: accent_divider, footer, card_css,
+│                                 # callout, metric_row, section_header, sr_only,
+│                                 # label_chart, set_aria_label — all consume
+│                                 # theme.py, none hardcode a value themselves
+├── assets/icons/                # github.png, linkedin.png, kiwifruit.png —
+│                                 # footer icons, see docs/attributions.md
 ├── pages/
 │   ├── 0_Intro.py               # built — landing page
 │   ├── 1_Overview.py            # built — KPI row + region-wide chart
 │   ├── 2_Suitability_Map.py     # built — parcel-level pydeck map
-│   ├── 3_Expansion_Candidates.py # built — pydeck map, LCDB-colored
+│   ├── 3_Expansion_Candidates.py # built — pydeck map, LCDB-coloured
 │   ├── 4_Apophenia_Comparison.py # built — cross-project comparison
 │   └── 5_Climate_Risk.py        # built — frost/chill/rain by subzone
 └── README.md
@@ -37,17 +45,19 @@ dashboard/
   region-wide Excellent/Good/Marginal split.
 - `2_Suitability_Map.py` — **built**. Parcel-level pydeck GeoJsonLayer
   map, geometry from `parcels_linz.geojson` joined with
-  `suitability_score`/`subzone` from `parcel_scores`, colored by level,
+  `suitability_score`/`subzone` from `parcel_scores`, coloured by level,
   with a subzone filter (5 named Apophenia subzones + "All") and a
   hover tooltip. Full precision genuinely exceeded Streamlit's 200MB
   message size limit for the "All" view (229MB) — geometry is
-  simplified (~1m tolerance) and coordinates rounded (6dp) in the cached
-  loader; see the page's own docstring for the numbers.
+  simplified (~5m tolerance) and coordinates rounded (6dp) once at
+  ingestion time in `src/01_ingest_linz.py`, not on every cold page
+  load; see that script's and the page's own docstrings for the
+  numbers.
 - `3_Expansion_Candidates.py` — **built**. Parcel-level pydeck map of
-  `expansion_candidates`, colored/filterable by LCDB class instead of
+  `expansion_candidates`, coloured/filterable by LCDB class instead of
   suitability level (subzone filter + LCDB class filter, both with
   "All"), hover tooltip, spinner on load. Excludes urban/settlement LCDB
-  classes at the display layer (13,041 → 11,383 shown) — a known gap in
+  classes at the display layer (13,040 → 11,378 shown) — a known gap in
   the underlying `expansion_candidates` table itself, logged in
   `docs/methodology.md` as a refinement still to push back into
   `08_regional_summary_expansion.py`.
@@ -56,14 +66,14 @@ dashboard/
   table (Terroir's `mean_score` next to Apophenia's 3 synthetic risk
   indicators), with correlations computed live from the loaded table
   (not hardcoded) and plain-language interpretation for each, including
-  the near-zero one explicitly labeled "no meaningful relationship." A
-  prominent `st.warning()` disclaimer sits at the top, and the -0.86
+  the near-zero one explicitly labelled "no meaningful relationship." A
+  prominent `st.warning()` disclaimer sits at the top, and the -0.85
   PSA-incidence correlation carries its own caveat about Opotiki's
   outlier influence — recomputed without Opotiki (r = -0.76, n=4) to
   confirm the correlation survives removing it rather than assuming.
 - `5_Climate_Risk.py` — **built**. Business question 5:
   `subzone_climate_risk` (5 subzones) shown as a table of the 3
-  annualized metrics (frost days/year, chill hours/year avg, heavy rain
+  annualised metrics (frost days/year, chill hours/year avg, heavy rain
   days/year), with the raw 10-year totals for frost and heavy rain
   tucked into an expander (chill hours has no raw-total column, only
   the average). Interpretation covers near-zero frost region-wide, the
@@ -81,12 +91,116 @@ dashboard/
   path instead of root when the page is deep-linked directly. Confirmed
   this doesn't affect real usage (root load + sidebar navigation is
   always clean) — flagged for the final polish pass, not forgotten.
-- **Suitability Map: the pydeck basemap renders dark (CARTO's default
-  dark-matter style), clashing with the rest of the app's light
-  `#E8E8E3` theme.** pydeck/deck.gl's map style isn't controlled by
-  `.streamlit/config.toml` — it needs its own explicit light-style
-  `map_style` on the `pydeck.Deck` object. Flagged for the final polish
-  pass, along with the footer and button styling — not forgotten.
+- **Suitability Map and Expansion Candidates: the pydeck basemap renders
+  dark (CARTO's default dark-matter style), clashing with the rest of
+  the app's light `#E8E8E3` theme.** Confirmed this affects both map
+  pages, not just Suitability Map. pydeck/deck.gl's map style isn't
+  controlled by `.streamlit/config.toml` — it needs its own explicit
+  light-style `map_style` on each `pydeck.Deck` object. Flagged for the
+  final polish pass — not forgotten.
+
+## Design system
+
+`theme.py` holds every derived visual value — colours, spacing, shadow,
+callout variants — computed from the 5 confirmed brand colours via
+explicit alpha-blend helpers, not eyeballed. `components.py` imports it
+and does the actual rendering; nothing in `components.py` or any page
+hardcodes a colour/shadow/spacing value on its own anymore. Both are
+imported the same way from a page script (`sys.path.insert(...)` +
+`from components import ...` / `import theme`, since Streamlit puts
+each page script's own directory on `sys.path`, not `dashboard/` —
+confirmed by testing a bare import first, which failed):
+
+- **`theme.TEXT` (`#14151A`)** — replaces Streamlit's unconfirmed
+  default (`#31333F`). A comprehensive contrast audit (below) found
+  `st.dataframe`'s canvas-rendered column headers failing WCAG at
+  3.59:1 — CSS can't reach canvas content, so the only fix was
+  darkening the global theme token. Header text renders at ~60%
+  opacity of `textColor` (empirically derived, not documented by
+  Streamlit); `#14151A` clears 4.5:1 with margin (measured 4.63:1)
+  while keeping the same neutral-slate family as the original.
+- **`theme.CHART_AXIS_COLOR` (`#5A5C62`)** — Vega-Lite's default axis
+  label grey measured 3.02:1 against the page background, a real
+  failure. Applied via Altair's `axis=alt.Axis(labelColor=...,
+  titleColor=...)`, computed to clear 4.5:1 with margin (5.44:1).
+- **`callout(kind, message)`** — replaces `st.warning()`/`st.info()`.
+  Streamlit's defaults (mustard yellow, light blue) aren't part of the
+  confirmed palette and don't match anything else in the app; the
+  warning box was also borderline-failing WCAG (4.48:1). Each variant
+  (`info`/`warning`/`danger`) pairs a light tint of one confirmed accent
+  colour with `theme.TEXT` — never the accent itself — as the message
+  colour, verified at 13:1+.
+- **`metric_row(metrics)`** — one elevated card per KPI via
+  `st.columns`, not one shared container. Used by Overview (3 metrics)
+  and Expansion Candidates (1, for consistency).
+- **`card_css(*keys, padding=...)`** — elevated-surface styling (solid
+  white background, two-layer soft shadow, generous padding). Went
+  through three rounds before landing here: a near-invisible
+  border+tint, a bumped-opacity border+tint that still read as flat,
+  and this — a real surface, not a tint over the page background.
+- **`accent_divider()`** — the straight-line accent-coloured rule from
+  `0_Intro.py`'s original polish pass, now the one section-break
+  treatment on every page (one per page, at its clearest content-type
+  boundary — restrained on purpose).
+- **`section_header(text)`** — replaces bare `st.subheader()` with the
+  same size/weight (28px/600, matched via computed style) plus a short
+  accent-coloured mark to the left.
+- **`footer()`** — three columns (Analysis: `st.page_link` to all 6
+  pages; Data Sources: real LINZ/S-map/LCDB/Open-Meteo URLs; Project:
+  Apophenia/GitHub/LinkedIn with icons), a disabled case-study CTA, and
+  a copyright line — carried by spacing, a subtle divider, and
+  typography, **not** a coloured background. A full-bleed solid-green
+  version shipped previously; removed after feedback that it read as
+  visually disconnected from the sidebar, plus it needed overriding
+  four separate Streamlit flex-layout constraints (flex-shrink,
+  flex-basis, `align-items:stretch` on a `flex-direction:column`
+  parent, and `stVerticalBlock`'s own `max-width:100%`) just to bleed
+  edge-to-edge — a lot of fragile surface area for a look that turned
+  out not to be wanted. Icons are now the natural black (no CSS
+  recolour filter needed, since there's no coloured background to
+  recolour them against).
+- **`LEVEL_PALETTE_HEX` / `LEVEL_PALETTE_HOVER_HEX`** — hex-string
+  mirror of `2_Suitability_Map.py`'s colourblind-safe `LEVEL_COLORS`,
+  for Altair charts that want CSS colours instead of RGBA arrays. Used
+  by Overview's bar chart for one consistent colour language.
+- **Overview's bar chart hover**: `st.altair_chart`, two stacked layers
+  (static base + opacity-conditional highlight in a computed lighter
+  shade) — `alt.condition()` with a field-based `Color` on both
+  branches hits a real bug in Altair 6.2.2, isolated in a standalone
+  repro before working around it. Bumped from a 40% to 60% white-blend
+  after feedback that the shift wasn't visible enough; re-verified with
+  an actual before/after screenshot (not just computed style — an
+  earlier "verified" claim based on computed style alone turned out to
+  need this).
+- **Sidebar/footer link hover**: Streamlit ships a sidebar hover
+  already (confirmed via computed style, `rgba(163,163,143,0.15)`) but
+  it's barely perceptible and off-brand grey — reinforced with
+  `theme.HOVER_TINT` everywhere a hover state exists in the app.
+- **Accessibility helpers** — `sr_only()`, `label_chart()` /
+  `set_aria_label()` (pydeck map descriptions and labels — see the
+  functions' own docstrings for the iframe-assumption bug this
+  corrected). Focus indicators checked via computed style (~10:1
+  contrast, no reinforcement needed) and keyboard navigation verified
+  via Playwright, both unchanged from the previous pass.
+- **Table styling**: explicit `column_config` right-aligns numeric
+  columns, left-aligns Subzone, consistent decimal formatting.
+- **Copy pass (corpo tone)**: every visitor-facing description and
+  disclaimer rewritten in plain business language — no "n=5", no
+  "provenance", no internal file paths or script names leaking into
+  captions. Every factual claim is unchanged.
+
+### Contrast audit
+
+A full scan of every rendered text-colour/background pair across all 6
+pages, including Streamlit's own defaults (captions, table headers,
+chart axis labels, sidebar nav) — not just the 4 brand colours. 19
+unique pairs measured; 2 real failures found and fixed (dataframe
+headers, chart axis labels — both above); 2 more initially looked like
+failures but were a bug in the scan script itself (it didn't composite
+a translucent callout background over its ancestor before computing
+luminance — corrected by hand, confirmed 13:1+). Full table with every
+pair, colour values, and ratios is in the design polish report, not
+just this summary.
 
 ## Design notes
 

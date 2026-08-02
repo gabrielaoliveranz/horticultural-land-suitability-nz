@@ -24,8 +24,15 @@ Format:
 
 - Historical Weather API by Open-Meteo (https://open-meteo.com/en/docs/historical-weather-api), CC BY 4.0
 
+- Cat icon (GitHub) by Dave Gandy — Flaticon (https://www.flaticon.es/iconos-gratis/gato)
+
+- LinkedIn icon by Magnific — Flaticon (https://www.flaticon.es/iconos-gratis/linkedin)
+
+- Kiwifruit icon by Park Jisun — Flaticon (https://www.flaticon.com/free-icons/kiwifruit)
+
 ## Status
 
-LINZ, S-map, and Open-Meteo entries logged (six sources total). NIWA was
-evaluated and dropped in favour of Open-Meteo (see `docs/data_sources.md`)
-— no NIWA attribution needed.
+LINZ, S-map, and Open-Meteo entries logged (six sources total), plus
+three dashboard footer icons (GitHub, LinkedIn, kiwifruit — nine entries
+total). NIWA was evaluated and dropped in favour of Open-Meteo (see
+`docs/data_sources.md`) — no NIWA attribution needed.

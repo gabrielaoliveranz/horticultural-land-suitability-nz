@@ -1,3 +1,22 @@
+## Spelling convention (en-NZ)
+
+This project uses en-NZ spelling throughout — documented as a fact in
+`PRODUCT.md`'s "Capabilities and Constraints" ("Writing conventions:
+en-NZ spelling throughout"), but never promoted here as a checked rule
+until a US-spelling pass was requested explicitly rather than caught
+proactively. Treat it the same as the stale-number audit below: a
+standing check, not something to wait to be asked for.
+
+Whenever writing or editing any user-facing copy, docstring, or
+comment: use en-NZ spelling (colour, behaviour, organise, analyse,
+centre, licence as a noun, catalogue, travelled — not the US
+equivalents). Before marking a copy-writing or documentation task
+done, grep the changed file(s) for common US patterns (`-ize`/`-ide`
+endings where NZ uses `-ise`, `-or` where NZ uses `-our`, `-er` where
+NZ uses `-re`, `-yze` where NZ uses `-yse`) and fix any found — include
+the list of instances found and fixed in the same summary, don't wait
+to be asked.
+
 ## Stale-number audits
 
 Whenever a fix changes a reported number (counts, percentages, thresholds,

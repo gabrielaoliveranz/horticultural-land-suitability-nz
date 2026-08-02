@@ -16,23 +16,32 @@ straight-line accent-coloured rules marking section breaks — not
 Streamlit's default grey st.divider(), and not diagonal cuts (explicitly
 ruled out as reading like consumer marketing, e.g. Zespri's own site).
 See PRODUCT.md, "Product Principles" ("credibility over spectacle").
+
+accent_divider() and footer() now live in components.py (design-system
+pass: the same divider language is used on pages 1-5, and every page
+shares one footer) — this page imports them rather than defining its
+own, so the pattern can't drift out of sync across pages.
+
+Copy pass (corpo tone): "Sister project" -> "Companion", and the "What
+makes this different" paragraph dropped the self-referential portfolio
+framing ("Most portfolio dashboards run on...") and "public git
+history" in favour of plain business language, keeping every factual
+claim (the exact 4 issues found and fixed) intact. See the dashboard
+polish report for the full before/after text across all 6 pages.
+
+Design-token pass: the accent colour now comes from theme.ACCENT
+instead of a locally-defined ACCENT constant — this page's tagline was
+the only remaining place still hardcoding it separately.
 """
+
+import sys
+from pathlib import Path
 
 import streamlit as st
 
-# Mirrors [theme] primaryColor in .streamlit/config.toml — that file is
-# the source of truth for the confirmed palette; kept in sync here only
-# because the tagline/divider below are custom HTML that Streamlit's
-# native theming doesn't reach.
-ACCENT = "#0B4F3D"
-
-
-def accent_divider():
-    """Subtle straight-line rule in the accent colour, replacing st.divider()."""
-    st.html(
-        f'<hr style="border:none; border-top:1px solid {ACCENT}; '
-        f'opacity:0.35; margin:1.75rem 0;">'
-    )
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import theme  # noqa: E402
+from components import accent_divider, footer  # noqa: E402
 
 
 st.title("Terroir")
@@ -41,14 +50,14 @@ st.subheader(
 )
 
 st.html(
-    f'<p style="color:{ACCENT}; font-weight:600; font-size:1.05rem; '
+    f'<p style="color:{theme.ACCENT}; font-weight:600; font-size:1.05rem; '
     f'margin-top:-0.5rem;">Real data. Real analysis. No shortcuts.</p>'
 )
 
 st.markdown(
-    "Sister project to [**Apophenia**](https://apophenia-nz.vercel.app), "
-    "a kiwifruit export risk simulator — together they cover both "
-    "operational risk and land-level suitability for Bay of Plenty "
+    "Companion to [**Apophenia**](https://apophenia-nz.vercel.app), "
+    "a kiwifruit export risk simulator — together, they cover both "
+    "operational risk and land-level suitability across Bay of Plenty "
     "horticulture."
 )
 
@@ -56,15 +65,14 @@ accent_divider()
 
 st.markdown("### What makes this different")
 st.markdown(
-    "Most portfolio dashboards run on synthetic or Kaggle-style data. "
-    "Terroir is built entirely on real official New Zealand government "
-    "sources — LINZ cadastral parcels, S-map soil data, LCDB land cover, "
-    "and Open-Meteo climate records — spatially joined and scored at the "
-    "individual parcel level. Every real data-quality issue found along "
-    "the way (coordinate system mismatches, macron-spelling gaps, a "
-    "non-unique join key, a scoring boundary bug) is disclosed and fixed "
-    "in the open, in the public git history, rather than smoothed over "
-    "for a cleaner story."
+    "Terroir is built entirely on official New Zealand government data — "
+    "LINZ cadastral parcels, S-map soil data, LCDB land cover, and "
+    "Open-Meteo climate records — spatially joined and scored at the "
+    "individual parcel level. Every data-quality issue encountered along "
+    "the way, including coordinate system mismatches, macron-spelling "
+    "inconsistencies, a non-unique join key, and a scoring boundary "
+    "error, is documented and resolved transparently, with a full audit "
+    "trail in the project's public repository."
 )
 
 accent_divider()
@@ -77,10 +85,42 @@ accent_divider()
 # #0000EE regardless) and exposes no colour parameter of its own. This
 # is the documented exception where targeted CSS is warranted: no native
 # mechanism reaches this widget's link colour.
+#
+# Restyled from a plain text link to a real solid-fill button
+# (theme.BUTTON_*) — this is the one primary action on the page, and a
+# text-only link (even in the accent colour) didn't read as "the" thing
+# to click next to a page full of body copy. White-on-ACCENT measures
+# 6.19:1 (see theme.py's Buttons section), well past WCAG.
 with st.container(key="cta-explore"):
     st.page_link(
         "pages/1_Overview.py",
         label="**Explore the analysis →**",
         icon=":material/query_stats:",
     )
-st.html(f'<style>.st-key-cta-explore a {{ color: {ACCENT} !important; }}</style>')
+st.html(
+    f"""<style>
+    .st-key-cta-explore [data-testid="stPageLink"] {{ display: inline-flex; width: auto; min-height: 0; }}
+    .st-key-cta-explore a {{
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: {theme.BUTTON_BG} !important;
+        color: {theme.BUTTON_TEXT} !important;
+        padding: 0.9rem 1.85rem;
+        border-radius: 8px;
+        font-size: 1.05rem;
+        text-decoration: none !important;
+        box-shadow: {theme.BUTTON_SHADOW};
+        transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    }}
+    .st-key-cta-explore a:hover {{
+        background: {theme.BUTTON_BG_HOVER} !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px {theme.rgba(theme.ACCENT, 0.35)};
+    }}
+    .st-key-cta-explore a p {{ color: {theme.BUTTON_TEXT} !important; margin: 0; font-weight: 600; }}
+    .st-key-cta-explore a span[data-testid="stIconMaterial"] {{ color: {theme.BUTTON_TEXT} !important; }}
+    </style>"""
+)
+
+footer()

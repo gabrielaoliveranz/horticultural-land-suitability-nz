@@ -48,9 +48,43 @@ smaller subset going deeper into the methodology/code or the live app.
   own site), which conflicts with this being a technical-review surface.
 - Confirmed visual direction: bold, large typography as the primary
   visual device (not imagery), using the candidate palette — primary
-  green `#0B4F3D`, lima green `#A8C93A`, SunGold gold `#F2A900`, alert
-  red `#C0392B`, background `#E8E8E3`. Section breaks use a simple
-  straight rule/line in an accent color, not diagonal cuts.
+  accent terracotta `#915117` (replacing the original primary green
+  `#0B4F3D` as the general accent), lima green `#A8C93A`, SunGold gold
+  `#F2A900`, alert red `#C0392B`, background `#E8E8E3`. Section breaks
+  use a simple straight rule/line in an accent colour, not diagonal cuts.
+- **Colour-role rule** (not just tribal knowledge — stated here so it's
+  checked against, not re-derived from memory each time):
+  - **Terracotta `#915117`** — general Terroir UI/interaction: buttons,
+    CTA, dividers, section headers, links, hover states, the
+    back-to-top button, the Analysis-column active/hover link state,
+    the footer's Project icons (Apophenia, GitHub, LinkedIn alike — no
+    per-icon colour distinction; an earlier version reserved primary
+    green for Apophenia specifically, dropped per direct feedback in
+    favour of one consistent accent across all three). This is "the
+    app's own colour" — used wherever the interaction stays inside
+    Terroir.
+  - **Primary green `#0B4F3D`** — not used anywhere in the general
+    dashboard UI. Stays confirmed in the brand palette itself (see
+    above) and defined as a reference value in `dashboard/theme.py`,
+    but nothing currently renders with it.
+  - **SunGold gold `#F2A900`** — warning/callout only
+    (`theme.CALLOUTS["warning"]`). Apophenia Comparison's
+    synthetic-data disclaimer is the one place this renders; it stays
+    gold, not terracotta — a warning shouldn't share a colour with a
+    neutral action.
+  - **Lima green `#A8C93A`** — confirmed brand colour, not currently
+    assigned a UI role.
+  - Explicitly excluded from all of the above: 2_Suitability_Map.py's
+    and 3_Expansion_Candidates.py's blue/amber/deep-orange level
+    colours, a separate accessibility-verified system (see that page's
+    own docstring for the deuteranopia/protanopia simulation), not a
+    brand-accent choice.
+  Terracotta was proposed at `#B5651D` and checked the same way every
+  other brand colour here is checked: it failed WCAG (white text on it
+  measured 4.34:1, it measured 3.53:1 as text on the background — both
+  need 4.5:1). Darkened to `#915117`, which clears both with margin
+  (6.19:1 and 5.03:1 respectively) — see `dashboard/theme.py`'s
+  `ACCENT` constant for the full derivation.
 
 ## Evidence on Hand
 
