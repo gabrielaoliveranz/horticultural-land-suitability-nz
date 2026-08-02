@@ -344,3 +344,71 @@ they put all 3 climate metrics on the same basis as each other.
 
 Not yet incorporated into `suitability_score` — see "Future refinement
 (not implemented)" under Score distribution above.
+
+---
+
+## Geometry simplification moved to ingestion
+
+**Why:** both map pages (`2_Suitability_Map.py`, `3_Expansion_Candidates.py`)
+used to call `shapely.simplify()`/`set_precision()` on every cold
+`st.cache_data` miss — a full read + simplify of the ~108MB parcels file
+regardless of which subzone ended up displayed. Cold-start timing
+(fresh server process, first load, deck.gl chart ready) confirmed this
+was the dominant cost: ~13.7s for Suitability Map, ~9.7s for Expansion
+Candidates. Moved the simplify step into `src/01_ingest_linz.py`
+instead, so `data/processed/parcels_linz.geojson` is saved already at
+map-ready precision (same tolerance as before: `SIMPLIFY_TOLERANCE_DEG
+= 0.00005` deg, ~5m max deviation; `PRECISION_GRID_DEG = 1e-6`, ~11cm)
+— every downstream consumer reads pre-simplified geometry directly.
+Output file dropped from ~108MB to ~30MB.
+
+**Downstream risk checked, not assumed:** `02_ingest_soil_lcdb.py` and
+`03_ingest_subzones.py` both compute a per-parcel centroid and
+spatial-join it (`predicate="within"`) against soil/LCDB/locality
+polygons. A simplification-shifted centroid could in principle cross a
+polygon boundary and flip a match. Re-ran the full 8-script pipeline
+against the resimplified file and diffed every output row against a
+pre-change backup:
+
+- `parcel_attributes`: 143 genuine attribute-value differences out of
+  22,834 rows x several soil/LCDB columns each (NaN-safe comparison,
+  not a naive string diff) — all traced to centroid shifts landing a
+  parcel on the other side of a soil/LCDB polygon boundary it was
+  already near.
+- `03_ingest_subzones.py`: 1 of 22,834 parcels flipped subzone
+  assignment (a centroid that moved across a subzone boundary).
+- `04_calculate_score.py`: 35 of 21,491 scored parcels changed
+  `suitability_score`, all traced back to the 143 attribute diffs above
+  (a changed soil order/texture/drainage/depth value shifting the
+  weighted score) — none crossed a `suitability_level` bin boundary in
+  a way that changed the count materially.
+- Ripple into aggregates (`subzone_summary`, `cross_project_comparison`,
+  `subzone_climate_risk`, `expansion_candidates`): small shifts only,
+  on the order of 0.1-1.5% in mean scores and correlation coefficients
+  per subzone (e.g. Opotiki's mean score) — consistent with 35 changed
+  rows out of 21,491, not a sign of a broader problem.
+
+All drift is small, fully explained by the single anticipated
+boundary-flip mechanism, and non-crashing — no script errors, no row
+count changes anywhere except the 1 subzone reassignment above.
+
+**Cold-start before/after** (same methodology as the payload-size
+measurements above: fresh server process via
+`streamlit run dashboard/streamlit_app.py`, `agent-browser open`, poll
+for `[data-testid="stDeckGlJsonChart"]` present and
+`[data-testid="stSpinner"]` absent):
+
+| Page | Before | After |
+|---|---|---|
+| Suitability Map | ~13.7s | ~10.3s |
+| Expansion Candidates | ~9.7s | ~10.3s |
+
+Suitability Map improved (~25% faster) since it read the full ~108MB
+file and simplified all 21,491 parcels on every cold start regardless
+of the ~271-parcel Katikati default. Expansion Candidates stayed flat
+(actually ~0.6s slower, within measurement noise) — its own prior
+performance pass had already narrowed its cold-start cost close to the
+floor both pages now share: parsing the shared parcels file with
+geopandas plus Streamlit's own module-import/session overhead, not
+simplification. Both pages now converge to the same ~10.3s, which is
+consistent with neither paying a runtime simplify cost anymore.

@@ -32,6 +32,35 @@ Plains) while the region's other 2 excluded TAs (Kawerau District,
 Rotorua District) do not — Kawerau has 0.00% orchard/vineyard/perennial-
 crop LCDB coverage (checked via real parcel boundaries, not a bbox
 approximation) and Rotorua's is negligible (0.25%).
+
+Geometry simplification (moved here from dashboard runtime): the
+dashboard's two pydeck map pages (2_Suitability_Map.py,
+3_Expansion_Candidates.py) used to call shapely.simplify() and
+set_precision() on every cold start — the same ~108MB read + full-
+dataset simplify every time Streamlit's cache was empty, dominating
+cold-load time regardless of which subzone ended up displayed (see
+those pages' own "Performance pass" docstring notes for the measured
+numbers this was chasing). Simplifying once here, at ingestion time,
+means the canonical parcels_linz.geojson is already at map-ready
+precision — every downstream consumer (the dashboard, and 02/03 below)
+loads pre-simplified geometry directly, no runtime cost.
+
+Tolerance (SIMPLIFY_TOLERANCE_DEG, 0.00005 deg, ~5m max deviation at
+this latitude) and precision grid (PRECISION_GRID_DEG, 1e-6, ~11cm) are
+carried over unchanged from the dashboard's own values — already
+verified there via the Douglas-Peucker guarantee and Web Mercator
+pixel-resolution math (shapely.simplify(preserve_topology=True) bounds
+every point to within `tolerance` of the original, not a heuristic).
+
+Downstream risk, checked rather than assumed: 02_ingest_soil_lcdb.py
+and 03_ingest_subzones.py both compute a centroid per parcel and
+spatial-join it (predicate="within") against soil/LCDB/locality
+polygons — a simplification-shifted centroid could in principle cross
+a polygon boundary and change a match. Re-ran both against the
+resimplified file and diffed every row against the pre-change output:
+see docs/methodology.md for the actual comparison (this docstring
+states the risk existed and was checked, not the specific numbers,
+which would go stale here without a corresponding pipeline re-run).
 """
 
 import os
@@ -39,6 +68,7 @@ from pathlib import Path
 
 import geopandas
 import requests
+import shapely
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -71,6 +101,11 @@ CQL_FILTER = "territorial_authority_ascii IN ({}) AND area > {}".format(
 # District now correctly included, a materially higher row count than the
 # old ~14,265 figure is expected, not a bug.
 EXPECTED_ROW_COUNT_APPROX = 14_265
+
+# Carried over unchanged from the dashboard's own values — see module
+# docstring's "Geometry simplification" note for the derivation.
+SIMPLIFY_TOLERANCE_DEG = 0.00005   # ~5m max deviation at this latitude
+PRECISION_GRID_DEG = 1e-6          # 6 decimal places, ~11cm
 
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "data" / "processed"
 OUTPUT_PATH = OUTPUT_DIR / "parcels_linz.geojson"
@@ -113,10 +148,19 @@ def main():
 
     gdf = geopandas.GeoDataFrame.from_features(features, crs="EPSG:4326")
 
+    print(
+        f"\nSimplifying geometry (tolerance={SIMPLIFY_TOLERANCE_DEG} deg "
+        f"~5m, precision grid={PRECISION_GRID_DEG} ~11cm)..."
+    )
+    gdf["geometry"] = gdf.geometry.simplify(SIMPLIFY_TOLERANCE_DEG, preserve_topology=True)
+    gdf["geometry"] = gdf.geometry.apply(
+        lambda g: shapely.set_precision(g, grid_size=PRECISION_GRID_DEG)
+    )
+
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     gdf.to_file(OUTPUT_PATH, driver="GeoJSON")
 
-    print(f"\nSaved {len(gdf)} parcels to {OUTPUT_PATH}")
+    print(f"\nSaved {len(gdf)} parcels (pre-simplified) to {OUTPUT_PATH}")
     print(
         f"Prior runs reported approx. {EXPECTED_ROW_COUNT_APPROX:,} parcels — "
         f"that figure only covered 2 of 3 TAs due to the macron bug fixed "
