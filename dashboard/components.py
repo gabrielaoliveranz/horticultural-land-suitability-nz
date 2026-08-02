@@ -64,7 +64,11 @@ DATA_SOURCES = [
 # background was removed).
 PROJECT_LINKS = [
     ("Apophenia", "https://apophenia-nz.vercel.app", "kiwifruit.png"),
-    ("GitHub", "https://github.com/gabrielaoliveranz", "github.png"),
+    # Was the bare profile URL (github.com/gabrielaoliveranz) — a
+    # placeholder from before this repo existed on GitHub. Now points at
+    # the repo itself, consistent with what a visitor clicking "GitHub"
+    # from a Terroir-specific footer would expect to land on.
+    ("GitHub", "https://github.com/gabrielaoliveranz/horticultural-land-suitability-nz", "github.png"),
     ("LinkedIn", "https://www.linkedin.com/in/gabriela-olivera-nz/", "linkedin.png"),
 ]
 
