@@ -142,9 +142,9 @@ streamlit run dashboard/streamlit_app.py
 | Scoring model + regional/expansion summaries | ✅ Done |
 | Cross-project comparison with Apophenia | ✅ Done |
 | Streamlit dashboard (6 pages) | ✅ Built, verified working locally |
-| Streamlit Community Cloud deployment | 🔄 Not yet done — no live URL exists |
-| Case study write-up | 🔄 Partial — a visual design reference exists (`case_study/reference_design.html`, built separately via Claude's design tooling), but the narrated case study (business question → methodology → findings → recommendation) hasn't been written, and nothing here is linked from the dashboard or deployed |
-| GitHub Pages deployment | 🔄 Not yet done — repo was only connected to GitHub this session, no Pages configuration exists |
+| Streamlit Community Cloud deployment | ✅ Live at [terroir.streamlit.app](https://terroir.streamlit.app) |
+| Case study write-up | ✅ Built and deployed — [gabrielaoliveranz.github.io/terroir-case-study](https://gabrielaoliveranz.github.io/terroir-case-study/) |
+| GitHub Pages deployment | ✅ Live at [gabrielaoliveranz.github.io/terroir-case-study](https://gabrielaoliveranz.github.io/terroir-case-study/) |
 
 ## Technology stack
 

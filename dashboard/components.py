@@ -72,6 +72,13 @@ PROJECT_LINKS = [
     ("LinkedIn", "https://www.linkedin.com/in/gabriela-olivera-nz/", "linkedin.png"),
 ]
 
+# The narrated case study (business question -> methodology -> findings
+# -> recommendation) — a separate site/repo from this one, deployed via
+# GitHub Pages. Was a disabled "(coming soon)" pill; live as of this
+# commit — verified by loading the URL and confirming real rendered
+# content, not just assumed from the deploy having happened.
+CASE_STUDY_URL = "https://gabrielaoliveranz.github.io/terroir-case-study/"
+
 
 def _icon_data_uri(filename):
     data = base64.b64encode((ICONS_DIR / filename).read_bytes()).decode("ascii")
@@ -519,10 +526,8 @@ def footer():
             st.html(project_html)
 
         st.html(
-            '<div class="footer-cta" aria-disabled="true">'
-            "Read the full case study &rarr; "
-            '<span class="footer-cta-soon">(coming soon)</span>'
-            "</div>"
+            f'<a class="footer-cta" href="{CASE_STUDY_URL}" target="_blank" '
+            f'rel="noopener noreferrer">Read the full case study &rarr;</a>'
         )
         st.html('<div class="footer-copyright">&copy; 2026 Gabriela Olivera &middot; Terroir</div>')
 
@@ -599,14 +604,17 @@ def footer():
             background: {theme.BUTTON_OUTLINE_BG};
             border: {theme.BUTTON_OUTLINE_BORDER};
             border-radius: {theme.CARD_RADIUS};
-            color: {theme.BUTTON_OUTLINE_TEXT};
+            color: {theme.BUTTON_OUTLINE_TEXT} !important;
             font-weight: 600;
             font-size: 0.9rem;
-            cursor: not-allowed;
-            user-select: none;
-            opacity: 0.6;
+            text-decoration: none !important;
+            opacity: 1 !important;
+            transition: background-color 0.15s ease;
         }}
-        .footer-cta-soon {{ font-weight: 400; opacity: 0.8; }}
+        .footer-cta:hover {{
+            background: {theme.BUTTON_OUTLINE_BG_HOVER};
+            text-decoration: none !important;
+        }}
         .footer-copyright {{
             margin-top: 1.75rem;
             padding-top: 1.5rem;
