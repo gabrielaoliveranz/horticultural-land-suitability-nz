@@ -21,26 +21,22 @@ against emoji standing in for an icon system. The browser-tab favicon
 below is a single deliberate kiwifruit emoji, not part of that system,
 so it's left as-is.
 
-bootstrap.ensure_data() runs before st.navigation/pg.run() — see
-bootstrap.py's own docstring. It's a same-directory import (no
-sys.path insertion needed, unlike pages/*.py reaching into dashboard/:
-this file already lives in dashboard/, so Python puts that directory
-on sys.path[0] for the entrypoint script automatically). Called after
-st.set_page_config(), since that must be the first Streamlit command
-in the script.
+No data-bootstrap step here: data/processed/terroir.db and
+parcels_linz.geojson are committed to the repo via Git LFS (see
+.gitattributes and data/processed/README.md), so they're present on
+disk on every deploy, including a fresh Streamlit Cloud clone — no
+ingestion-on-first-load step needed. An earlier version ran the
+pipeline live on cold start instead; removed once the data itself
+started shipping with the repo.
 """
 
 import streamlit as st
-
-import bootstrap
 
 st.set_page_config(
     page_title="Terroir — Bay of Plenty Land Suitability",
     page_icon="🥝",
     layout="wide",
 )
-
-bootstrap.ensure_data()
 
 pages = [
     st.Page("pages/0_Intro.py", title="Intro", icon=":material/home:", default=True),
