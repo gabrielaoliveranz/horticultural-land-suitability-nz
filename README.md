@@ -133,6 +133,7 @@ streamlit run dashboard/streamlit_app.py
 - **`expansion_candidates` still includes some urban/settlement land.** The underlying table only excludes the literal orchard/vineyard LCDB class, not built-up land — 12.7% of candidates are urban/settlement. The dashboard filters these at display time as an interim fix; the real fix (pushing the exclusion into `08_regional_summary_expansion.py` itself) is a documented but not-yet-done refinement. See `docs/methodology.md`.
 - **Centroid-based spatial joins have an inherent precision limit.** A parcel sitting close to a soil/LCDB/subzone polygon boundary can flip its match if its centroid shifts even slightly (e.g. from geometry simplification) — quantified and disclosed, not hidden, in `docs/methodology.md`'s "Geometry simplification moved to ingestion" section.
 - **The scoring weights (80/20 split) are a reasoned design choice, not a formally derived statistic.** Documented as an assumption open to revision, not presented as more rigorous than it is. See `docs/methodology.md`, "Weights".
+- **Whakatāne District has no Apophenia Comparison.** It's included in the soil suitability analysis (parcels, scoring, expansion candidates) but absent from the Apophenia Comparison page — Apophenia's 5 corridors were designed around distance-to-port scenarios and never included a Whakatāne corridor, so no cross-project comparison is possible for that district. See `docs/methodology.md`, "Cross-project comparison (business question 3)".
 
 ## Roadmap
 

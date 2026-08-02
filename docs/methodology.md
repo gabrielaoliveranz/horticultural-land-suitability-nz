@@ -303,6 +303,15 @@ Also worth noting: n=5 (one row per subzone) is far too small for the
 correlation coefficients above to carry statistical weight on their own,
 independent of the synthetic-data caveat.
 
+**Known limitation — Whakatāne District excluded:** Whakatāne District
+is included in the soil suitability analysis (parcels, scoring,
+expansion candidates) but is absent from the Apophenia Comparison page
+— Apophenia's 5 corridors were designed around distance-to-port
+scenarios and never included a Whakatāne corridor, so no cross-project
+comparison is possible for that district. This is the reason `n=5`
+above covers only the original 5 named subzones, not all 4 territorial
+authorities Terroir now scores.
+
 ---
 
 ## Climate risk ingestion (business question 5)
