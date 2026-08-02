@@ -5,7 +5,5 @@ __pycache__/
 .claude/settings.local.json
 node_modules/
 
-data/processed/*
 data/raw/*/*
-!data/processed/README.md
 !data/raw/*/README.md
