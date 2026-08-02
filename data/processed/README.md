@@ -76,3 +76,18 @@ order (`python src/01_ingest_linz.py`, then `02_ingest_soil_lcdb.py`,
 `07_ingest_climate_risk.py`, and `08_regional_summary_expansion.py`),
 not committed to git due to size. Requires a `.env` with valid API keys
 — see docs/data_sources.md.
+
+**On Streamlit Cloud**, there's no persistent volume carried over from
+a prior manual run, so this happens automatically instead:
+`dashboard/bootstrap.py`'s `ensure_data()` runs at app startup (before
+any page loads), checks whether `terroir.db` and
+`parcels_linz.geojson` already exist, and — only if either is missing
+— runs the same `01`-`08` sequence itself under a
+`st.spinner("Setting up data...")`, reading `LINZ_API_KEY`/
+`LRIS_API_KEY` from Streamlit Cloud's Secrets (injected into the
+process environment the same way `.env` would be locally, so the
+scripts themselves needed no changes). Once those two files exist, the
+bootstrap is a no-op on every subsequent run — locally or on Cloud —
+so the manual workflow above is unaffected. See `bootstrap.py`'s own
+docstring for the one known edge case this doesn't cover (a mid-
+pipeline failure on script `08` specifically).

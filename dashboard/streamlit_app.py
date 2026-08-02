@@ -20,15 +20,27 @@ Streamlit's own design guidance and Impeccable's craft-floor rule
 against emoji standing in for an icon system. The browser-tab favicon
 below is a single deliberate kiwifruit emoji, not part of that system,
 so it's left as-is.
+
+bootstrap.ensure_data() runs before st.navigation/pg.run() — see
+bootstrap.py's own docstring. It's a same-directory import (no
+sys.path insertion needed, unlike pages/*.py reaching into dashboard/:
+this file already lives in dashboard/, so Python puts that directory
+on sys.path[0] for the entrypoint script automatically). Called after
+st.set_page_config(), since that must be the first Streamlit command
+in the script.
 """
 
 import streamlit as st
+
+import bootstrap
 
 st.set_page_config(
     page_title="Terroir — Bay of Plenty Land Suitability",
     page_icon="🥝",
     layout="wide",
 )
+
+bootstrap.ensure_data()
 
 pages = [
     st.Page("pages/0_Intro.py", title="Intro", icon=":material/home:", default=True),
