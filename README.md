@@ -23,6 +23,7 @@ horticultural-land-suitability-nz/
 ├── README.md
 ├── PRODUCT.md                   # design/product decisions (Impeccable skill)
 ├── CLAUDE.md                    # project-specific working conventions
+├── LICENSE                       # MIT — code only, see "Data and licensing"
 ├── .github/workflows/tests.yml   # CI: pytest on every push/PR
 ├── requirements.txt              # Python dependencies (pinned)
 ├── requirements-dev.txt          # + dev-only tools (colorspacious, pytest)
@@ -145,7 +146,34 @@ clean-clone, no-data guarantee is what makes that safe to run in CI.
 | **LINZ** — NZ Property Boundaries (layer 122657) | WFS 2.0.0 vector API | Cadastral parcel boundaries, the base unit of analysis | CC-BY 3.0 New Zealand |
 | **S-map** — Soil Depth/Texture/Drainage/Classification (4 layers) | WFS 2.0.0 vector API, via LRIS Portal | Soil suitability attributes (soil_order, soil_texture, soil_drainage, soil_depth) | Open licence for these 4 layers. Water-holding-capacity (PAW) data is restricted (Base Property Data), not used — see Known Limitations. |
 | **LCDB** — Land Cover Database v6.0 (layer 123148) | WFS 2.0.0 vector API, via LRIS Portal | Current land-cover classification (identifies existing orchard/vineyard use) | Not separately stated in `docs/data_sources.md` — accessed via the same LRIS Portal/WFS as S-map, but its own licence terms aren't confirmed there independently of the 4 S-map layers. |
-| **Open-Meteo** — Historical Weather API (ERA5/ERA5-Land reanalysis) | REST/JSON, no API key or account required | Climate risk: frost days, chill hours, heavy-rain days per subzone | CC BY 4.0, free for non-commercial use |
+| **Open-Meteo** — Historical Weather API (ERA5/ERA5-Land reanalysis) | REST/JSON, no API key or account required | Climate risk: frost days, chill hours, heavy-rain days per subzone | Data: CC BY 4.0 (permits commercial use). Free API tier used here is non-commercial-only per Open-Meteo's terms of service — a separate condition from the data licence, see `docs/data_sources.md`. |
+
+## Data and licensing
+
+**Code:** MIT — see `LICENSE`. Covers everything in `src/`, `dashboard/`,
+`tests/`, and the rest of this repository's own code.
+
+**Data is not covered by that licence.** `data/processed/parcels_linz.geojson`
+and `terroir.db` (shipped via Git LFS, see above) are derived from
+third-party sources, each under its own terms — this repo can't grant
+rights it doesn't hold over data that isn't its own:
+
+- **LINZ** (NZ Property Boundaries) — CC-BY 3.0 New Zealand. Attribution:
+  "Sourced from LINZ. CC BY 3.0."
+- **S-map** (soil depth/texture/drainage/order) — Manaaki Whenua –
+  Landcare Research, via the LRIS Portal. Open licence for the 4 layers
+  used here; the restricted Base Property Data (PAW) layer is not used.
+- **LCDB** (land cover) — Manaaki Whenua – Landcare Research, via the
+  same LRIS Portal/WFS as S-map. Its licence terms aren't confirmed
+  independently of the 4 S-map layers' terms — see `docs/data_sources.md`.
+- **Open-Meteo** (climate) — data under CC BY 4.0 (permits commercial
+  use, with attribution); the free API tier this project uses is
+  restricted to non-commercial use under Open-Meteo's own terms of
+  service, which is a separate condition from the data licence itself.
+
+Full per-source terms and reasoning are in `docs/data_sources.md`; the
+dated log of every third-party asset used (including these) is in
+`docs/attributions.md`.
 
 ## Methodology highlights
 

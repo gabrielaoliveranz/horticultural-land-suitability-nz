@@ -147,7 +147,20 @@ reanalysis). REST/JSON, no API key, no account required.
 - Chill hours — NOT a direct API field; calculated from hourly
   `temperature_2m` (hours below 7°C threshold during dormancy period)
 
-**Licence:** CC BY 4.0, free for non-commercial use.
+**Data licence:** CC BY 4.0 (Attribution 4.0 International) — permits
+commercial use; requires attribution (credit, a link to the licence,
+and an indication of changes made).
+
+**API access terms (separate from the data licence):** the free API
+tier this project uses (no key or account, rate-limited to 10,000
+calls/day) is restricted to non-commercial use under Open-Meteo's own
+Terms of Service — that restriction sits on the free tier's access
+terms, not on the CC BY 4.0 data licence itself. Commercial use
+requires a paid API plan, which removes the non-commercial restriction
+while keeping the same CC BY 4.0 attribution requirement. Terroir is a
+non-commercial portfolio project, so it's within the free tier's terms
+either way. Verified against https://open-meteo.com/en/terms and
+https://open-meteo.com/en/licence.
 
 **Status:** Confirmed, decision locked per conventions.md Fase 0 rule.
 
