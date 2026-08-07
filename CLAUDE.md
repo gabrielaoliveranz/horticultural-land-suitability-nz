@@ -69,3 +69,53 @@ original request. Include this in the same summary, don't wait to be asked.
 - **Local vs. pushed history:** amending commit messages or rebasing is
   safe while nothing has been pushed. Once pushed, treat history as
   immutable — don't rewrite it without being explicitly asked.
+
+## Python engineering standards
+
+These are standing checks, not one-off tasks — apply them to every new
+script and every edit, without being asked each time.
+
+- **Logging, not `print()`.** Pipeline scripts in `src/` report progress
+  through the stdlib `logging` module with a shared configuration: INFO
+  for progress, WARNING for retries and coverage gaps, ERROR for
+  failures. Bare `print()` was the original pattern across all eight
+  scripts and gave no levels, no timestamps, and no way to silence
+  output under test. Streamlit's own `st.*` output in `dashboard/` is
+  exempt — this applies to the pipeline only.
+- **Type hints on every function signature.** Both in `src/` and in
+  tests. Hints only; no type checker runs in CI.
+- **PEP 8, including the 79-character line limit.** Never widen a line
+  past it for convenience — restructure instead.
+
+## Tests ship with the logic
+
+New pure or logic-dense functions are tested in the same commit that
+introduces them — never "later". `api_retry.py` was added with bounded
+retries, exponential backoff, `Retry-After` parsing and 4xx-vs-5xx
+branching, and shipped with zero coverage in the very commit series that
+added the project's first tests. Reviewing my own work caught it; a rule
+would have prevented it.
+
+Tests must run on a clean clone with no data present: use small
+in-memory fixtures, never read `terroir.db` or `parcels_linz.geojson`.
+Any bug found and fixed in a calculation gets a regression test naming
+the bug, in the style of the `pandas.cut` left-inclusive binning test.
+
+## Paths and configuration have one home
+
+`PROJECT_ROOT`, `DB_PATH` and the processed-data paths live in
+`src/config.py` and are imported from there. Seven scripts each
+redefined `PROJECT_ROOT = Path(__file__).resolve().parent.parent` with
+their own `DB_PATH`, meaning a single relocation of the database would
+have required seven coordinated edits. Never redefine these locally.
+
+## Dependency and deployment discipline
+
+Every package imported directly anywhere in `src/` or `dashboard/` is
+declared explicitly in `requirements.txt` and pinned — never left to
+resolve as a transitive dependency of `geopandas` or `streamlit`.
+
+Exact pins are a known cause of build failures on Streamlit Community
+Cloud. After any change to `requirements.txt`, confirm the pins resolve
+on the Python version that platform uses for this app. If a pin cannot
+resolve, stop and ask — never silently loosen one.
