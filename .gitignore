@@ -4,6 +4,7 @@ __pycache__/
 .venv/
 .claude/settings.local.json
 node_modules/
+.pytest_cache/
 
 data/raw/*/*
 !data/raw/*/README.md

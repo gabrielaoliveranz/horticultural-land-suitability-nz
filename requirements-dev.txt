@@ -10,3 +10,6 @@
 # any script or dashboard page at runtime, so it doesn't belong in
 # requirements.txt — it's a verification tool, not a runtime dependency.
 colorspacious==1.1.2
+
+# Runs the tests in tests/ (see "Running the tests" in README.md).
+pytest==9.1.1
