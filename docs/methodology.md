@@ -78,7 +78,7 @@ above.
 
 (Earlier figures of 1,411 / 7.2% of 19,525 were based on the same
 narrower, pre-fix bbox as above — re-run with the corrected filter and
-widened bbox in src/00_explore_volumes.py.)
+widened bbox in src/explore_volumes.py.)
 
 Decision: LCDB class is joined to each parcel via spatial join (centroid-
 in-polygon) as an **attribute**, not used to filter parcels out. Filtering
@@ -151,8 +151,8 @@ are grouped into suitability levels:
 Business question 1 is answered by reporting the % of parcels per level
 and their geographic concentration by subzone, not a single ranked list.
 
-**Boundary bug, fixed:** `05_subzone_summary.py` and
-`08_regional_summary_expansion.py` originally binned scores with
+**Boundary bug, fixed:** `subzone_summary.py` and
+`regional_summary_expansion.py` originally binned scores with
 `pandas.cut`'s default `right=True`, which is right-*inclusive* —
 placing a score of exactly 5.0 in "Marginal" and exactly 8.0 in "Good",
 both contradicting the ranges stated above (5.0 belongs in Good, 8.0 in
@@ -187,10 +187,10 @@ not built into the current score.
 
 ### Regional summary and expansion candidates (business questions 1 and 2)
 
-`src/08_regional_summary_expansion.py` extends the suitability-level
+`src/regional_summary_expansion.py` extends the suitability-level
 breakdown above to the full dataset (not just parcels within Apophenia's
 5 named subzones — that narrower view is `subzone_summary`, from
-`05_subzone_summary.py`) and answers business question 2.
+`subzone_summary.py`) and answers business question 2.
 
 **Business question 1, region-wide (`suitability_levels_summary`):** of
 21,491 scored parcels — Excellent 16,414 (76.4%), Good 3,890 (18.1%),
@@ -238,9 +238,9 @@ only helps consumers of that one dashboard page.
 
 **Refinement to do:** exclude the same 2 classes (or a broader
 "urban/built-up" set, if more are found) inside
-`src/08_regional_summary_expansion.py`'s `compute_expansion_candidates`
+`src/regional_summary_expansion.py`'s `compute_expansion_candidates`
 itself, so `expansion_candidates` is correct for every consumer, not
-just the dashboard — and re-run 08 so the table reflects it directly
+just the dashboard — and re-run `regional_summary_expansion.py` so the table reflects it directly
 rather than relying on each downstream reader to re-apply the same
 filter.
 
@@ -273,7 +273,7 @@ corridors (e.g. the Ōpōtiki-Tauranga corridor, 23% late) correlate with
 low soil suitability, or whether the risk is primarily logistical rather
 than agronomic.
 
-**Method:** `src/06_cross_project_comparison.py` joins Terroir's
+**Method:** `src/cross_project_comparison.py` joins Terroir's
 `subzone_summary` (mean_score per subzone, from real S-map/LCDB-derived
 scoring) against `data/external/dim_corridor_apophenia.csv` (Apophenia's
 per-corridor risk indicators) on subzone name, then computes the Pearson
@@ -320,7 +320,7 @@ authorities Terroir now scores.
 per parcel (22,834 API calls), each subzone is reduced to a single
 representative point — the average centroid of every parcel assigned
 that subzone (subzone IS NOT NULL, same assignment as
-`03_ingest_subzones.py`). Centroids are averaged in a projected CRS
+`ingest_subzones.py`). Centroids are averaged in a projected CRS
 (NZTM2000, EPSG:2193) for accuracy, then the single averaged point is
 converted back to WGS84 for the Open-Meteo API call. This trades
 per-parcel precision for a tractable 5-call ingestion — acceptable given
@@ -374,7 +374,7 @@ boundaries, not as decisions with a documented rejection reasoning.
   ingested or scored anywhere in Terroir. The only Psa reference in this
   project is Apophenia's own `psa_incidence_historical` column, used
   exclusively for the cross-project correlation in
-  `06_cross_project_comparison.py` (business question 3, see "Cross-project
+  `cross_project_comparison.py` (business question 3, see "Cross-project
   comparison" above) — it is Apophenia's operational-risk indicator, not an
   input to Terroir's own scoring model.
 - **Slope / terrain.** Slope materially affects machinery operability and
@@ -405,15 +405,15 @@ used to call `shapely.simplify()`/`set_precision()` on every cold
 regardless of which subzone ended up displayed. Cold-start timing
 (fresh server process, first load, deck.gl chart ready) confirmed this
 was the dominant cost: ~13.7s for Suitability Map, ~9.7s for Expansion
-Candidates. Moved the simplify step into `src/01_ingest_linz.py`
+Candidates. Moved the simplify step into `src/ingest_linz.py`
 instead, so `data/processed/parcels_linz.geojson` is saved already at
 map-ready precision (same tolerance as before: `SIMPLIFY_TOLERANCE_DEG
 = 0.00005` deg, ~5m max deviation; `PRECISION_GRID_DEG = 1e-6`, ~11cm)
 — every downstream consumer reads pre-simplified geometry directly.
 Output file dropped from ~108MB to ~30MB.
 
-**Downstream risk checked, not assumed:** `02_ingest_soil_lcdb.py` and
-`03_ingest_subzones.py` both compute a per-parcel centroid and
+**Downstream risk checked, not assumed:** `ingest_soil_lcdb.py` and
+`ingest_subzones.py` both compute a per-parcel centroid and
 spatial-join it (`predicate="within"`) against soil/LCDB/locality
 polygons. A simplification-shifted centroid could in principle cross a
 polygon boundary and flip a match. Re-ran the full 8-script pipeline
@@ -425,9 +425,9 @@ pre-change backup:
   not a naive string diff) — all traced to centroid shifts landing a
   parcel on the other side of a soil/LCDB polygon boundary it was
   already near.
-- `03_ingest_subzones.py`: 1 of 22,834 parcels flipped subzone
+- `ingest_subzones.py`: 1 of 22,834 parcels flipped subzone
   assignment (a centroid that moved across a subzone boundary).
-- `04_calculate_score.py`: 35 of 21,491 scored parcels changed
+- `calculate_score.py`: 35 of 21,491 scored parcels changed
   `suitability_score`, all traced back to the 143 attribute diffs above
   (a changed soil order/texture/drainage/depth value shifting the
   weighted score) — none crossed a `suitability_level` bin boundary in

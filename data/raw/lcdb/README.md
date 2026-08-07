@@ -19,7 +19,7 @@ fully reconciled. Left as-is here rather than silently deciding which
 is right.
 
 **Status:** Source confirmed (Fase 0/2 exploration). Ingestion is
-complete (`src/02_ingest_soil_lcdb.py`, 99.7% match rate) — this folder
+complete (`src/ingest_soil_lcdb.py`, 99.7% match rate) — this folder
 stays empty by design, not because ingestion hasn't happened: the
 pipeline fetches WFS responses live on each run and writes straight to
 `parcel_attributes.lcdb_class_2023` in `data/processed/terroir.db`, it

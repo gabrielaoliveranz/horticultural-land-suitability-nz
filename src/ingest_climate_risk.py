@@ -1,13 +1,13 @@
 # =============================================================================
 # TERROIR — Climate risk ingestion (Open-Meteo)
-# Script: 07_ingest_climate_risk.py
+# Script: ingest_climate_risk.py
 # Stage:  Ingestion
 # Author: Gabriela Olivera | Data Analytics Portfolio
 # =============================================================================
 """
 Computes one representative point per subzone (the average parcel centroid
 of every parcel with that subzone, excluding NULL — same parcel geometry
-already used in 03_ingest_subzones.py), then calls the Open-Meteo
+already used in ingest_subzones.py), then calls the Open-Meteo
 Historical Weather API (hourly temperature_2m + precipitation,
 2016-01-01 to 2025-12-31, local NZ timezone) for each of the 5 points.
 

@@ -14,7 +14,7 @@ Chill hours are calculated from hourly temperature, not pulled directly
 **Licence:** CC BY 4.0.
 
 **Status:** Source confirmed (Fase 0). Ingestion is complete
-(`src/07_ingest_climate_risk.py`, 5 subzones) — this folder stays empty
+(`src/ingest_climate_risk.py`, 5 subzones) — this folder stays empty
 by design, not because ingestion hasn't happened: the pipeline calls
 the API live on each run and writes straight to `subzone_climate_risk`
 in `data/processed/terroir.db`, it never caches a raw copy here.

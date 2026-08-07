@@ -1,18 +1,18 @@
 # =============================================================================
 # TERROIR — Regional suitability summary and expansion candidates
-# Script: 08_regional_summary_expansion.py
+# Script: regional_summary_expansion.py
 # Stage:  Scoring
 # Author: Gabriela Olivera | Data Analytics Portfolio
 # =============================================================================
 """
 Answers business question 1 (region-wide, not just the 5 named subzones —
-05_subzone_summary.py already covers those) and business question 2
+subzone_summary.py already covers those) and business question 2
 (expansion candidates).
 
 Part 1 — business question 1 (full regional picture):
 Groups every scored parcel in parcel_scores into suitability levels
 (Excellent 8.0-10.0, Good 5.0-7.9, Marginal <5.0, same bins as
-05_subzone_summary.py — both use right=False so a score of exactly 5.0
+subzone_summary.py — both use right=False so a score of exactly 5.0
 or 8.0 lands in the higher tier, matching this range notation exactly)
 and reports count + % per level across the whole dataset, not just
 parcels within Apophenia's 5 named subzones. Saved as
@@ -51,7 +51,7 @@ LEVELS_SUMMARY_TABLE = "suitability_levels_summary"
 EXPANSION_TABLE = "expansion_candidates"
 
 # Per docs/methodology.md, "Score distribution and suitability levels" —
-# same bins as 05_subzone_summary.py.
+# same bins as subzone_summary.py.
 LEVEL_BINS = [-float("inf"), 5.0, 8.0, float("inf")]
 LEVEL_LABELS = ["Marginal", "Good", "Excellent"]
 
@@ -73,7 +73,7 @@ def load_attributes(db_path):
 
 
 def compute_levels_summary(scores):
-    # right=False: see 05_subzone_summary.py's summarise() for why — matches
+    # right=False: see subzone_summary.py's summarise() for why — matches
     # the documented "Excellent: 8.0-10.0" / "Good: 5.0-7.9" spec exactly,
     # and keeps this consistent with compute_expansion_candidates() below,
     # which filters on the same >= 8.0 boundary.

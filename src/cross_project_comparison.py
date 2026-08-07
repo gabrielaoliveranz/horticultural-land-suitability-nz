@@ -1,6 +1,6 @@
 # =============================================================================
 # TERROIR — Cross-project comparison with Apophenia (business question 3)
-# Script: 06_cross_project_comparison.py
+# Script: cross_project_comparison.py
 # Stage:  Scoring
 # Author: Gabriela Olivera | Data Analytics Portfolio
 # =============================================================================

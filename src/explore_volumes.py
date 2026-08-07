@@ -1,6 +1,6 @@
 # =============================================================================
 # TERROIR — Exploratory volume/complexity check for LINZ and S-map layers
-# Script: 00_explore_volumes.py
+# Script: explore_volumes.py
 # Stage:  Ingestion (pre-Fase 2 exploration)
 # Author: Gabriela Olivera | Data Analytics Portfolio
 # =============================================================================
@@ -33,7 +33,7 @@ Macron fix (see docs/data_sources.md, "Technical note (macrons)"): the
 original version of this script filtered on `territorial_authority`,
 which uses official macron spelling ("Ōpōtiki District") and silently
 matched 0 Opotiki District parcels — the same bug later found in
-01_ingest_linz.py. Now filters on `territorial_authority_ascii`. The bbox
+ingest_linz.py. Now filters on `territorial_authority_ascii`. The bbox
 below is also widened to Opotiki's real extent (east to 178.2°, south to
 -38.9°), which the original narrower box would have half-missed.
 """

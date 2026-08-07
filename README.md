@@ -27,9 +27,13 @@ horticultural-land-suitability-nz/
 ├── .streamlit/config.toml        # dashboard theme (colours, fonts, radius)
 ├── .env                          # LINZ_API_KEY, LRIS_API_KEY (not committed)
 │
-├── src/                          # ingestion + scoring pipeline, run in order
-│   ├── 00_explore_volumes.py     # exploratory only — no DB writes
-│   ├── 01_ingest_linz.py … 08_regional_summary_expansion.py
+├── src/                          # ingestion + scoring pipeline — see src/README.md
+│   │                              # for the full run order (no numeric prefixes,
+│   │                              # so the order isn't visible from filenames alone)
+│   ├── explore_volumes.py     # exploratory only — no DB writes
+│   ├── ingest_linz.py, ingest_soil_lcdb.py, ingest_subzones.py, calculate_score.py,
+│   │   subzone_summary.py, cross_project_comparison.py, ingest_climate_risk.py,
+│   │   regional_summary_expansion.py
 │   └── README.md
 │
 ├── dashboard/                    # Streamlit app
@@ -71,15 +75,15 @@ horticultural-land-suitability-nz/
 
 | Script | Input | Output |
 |---|---|---|
-| `00_explore_volumes.py` | LINZ layer 122657, 4 S-map layers, LCDB layer 123148 (live WFS queries) | Console output only — volume/geometry stats, area-threshold validation. No database writes. |
-| `01_ingest_linz.py` | LINZ WFS layer 122657, CQL-filtered (4 TAs, area > 10,000 m²) | `data/processed/parcels_linz.geojson` — 22,834 parcels, geometry pre-simplified (~5m tolerance) |
-| `02_ingest_soil_lcdb.py` | Parcel centroids + 4 S-map WFS layers + LCDB WFS layer 123148 | `terroir.db`: `parcel_attributes` (soil_depth, soil_texture, soil_drainage, soil_order, lcdb_class_2023) |
-| `03_ingest_subzones.py` | Parcel centroids + LINZ layer 113764 (NZ Suburbs and Localities) | `terroir.db`: `parcel_attributes.subzone` column added |
-| `04_calculate_score.py` | `parcel_attributes` | `terroir.db`: `parcel_scores` — 21,491 parcels scored (nulls excluded) |
-| `05_subzone_summary.py` | `parcel_scores` + `parcel_attributes.subzone` | `terroir.db`: `subzone_summary` — 5 named Apophenia subzones |
-| `06_cross_project_comparison.py` | `subzone_summary` + `data/external/dim_corridor_apophenia.csv` | `terroir.db`: `cross_project_comparison` |
-| `07_ingest_climate_risk.py` | One representative centroid per subzone + Open-Meteo Historical Weather API (2016–2025) | `terroir.db`: `subzone_climate_risk` |
-| `08_regional_summary_expansion.py` | `parcel_scores` (region-wide) + `parcel_attributes.lcdb_class_2023` | `terroir.db`: `suitability_levels_summary` + `expansion_candidates` |
+| `explore_volumes.py` | LINZ layer 122657, 4 S-map layers, LCDB layer 123148 (live WFS queries) | Console output only — volume/geometry stats, area-threshold validation. No database writes. |
+| `ingest_linz.py` | LINZ WFS layer 122657, CQL-filtered (4 TAs, area > 10,000 m²) | `data/processed/parcels_linz.geojson` — 22,834 parcels, geometry pre-simplified (~5m tolerance) |
+| `ingest_soil_lcdb.py` | Parcel centroids + 4 S-map WFS layers + LCDB WFS layer 123148 | `terroir.db`: `parcel_attributes` (soil_depth, soil_texture, soil_drainage, soil_order, lcdb_class_2023) |
+| `ingest_subzones.py` | Parcel centroids + LINZ layer 113764 (NZ Suburbs and Localities) | `terroir.db`: `parcel_attributes.subzone` column added |
+| `calculate_score.py` | `parcel_attributes` | `terroir.db`: `parcel_scores` — 21,491 parcels scored (nulls excluded) |
+| `subzone_summary.py` | `parcel_scores` + `parcel_attributes.subzone` | `terroir.db`: `subzone_summary` — 5 named Apophenia subzones |
+| `cross_project_comparison.py` | `subzone_summary` + `data/external/dim_corridor_apophenia.csv` | `terroir.db`: `cross_project_comparison` |
+| `ingest_climate_risk.py` | One representative centroid per subzone + Open-Meteo Historical Weather API (2016–2025) | `terroir.db`: `subzone_climate_risk` |
+| `regional_summary_expansion.py` | `parcel_scores` (region-wide) + `parcel_attributes.lcdb_class_2023` | `terroir.db`: `suitability_levels_summary` + `expansion_candidates` |
 
 ## Local setup / How to run
 
@@ -97,19 +101,19 @@ pip install -r requirements.txt
 # LRIS_API_KEY  (LRIS Portal — separate key, same Koordinates login; covers both S-map and LCDB)
 # Open-Meteo needs no key.
 
-python src/01_ingest_linz.py
-python src/02_ingest_soil_lcdb.py
-python src/03_ingest_subzones.py
-python src/04_calculate_score.py
-python src/05_subzone_summary.py
-python src/06_cross_project_comparison.py
-python src/07_ingest_climate_risk.py
-python src/08_regional_summary_expansion.py
+python src/ingest_linz.py
+python src/ingest_soil_lcdb.py
+python src/ingest_subzones.py
+python src/calculate_score.py
+python src/subzone_summary.py
+python src/cross_project_comparison.py
+python src/ingest_climate_risk.py
+python src/regional_summary_expansion.py
 
 streamlit run dashboard/streamlit_app.py
 ```
 
-`00_explore_volumes.py` is exploratory only and not required for the pipeline to run.
+`explore_volumes.py` is exploratory only and not required for the pipeline to run.
 
 ## Data sources
 
@@ -132,7 +136,7 @@ streamlit run dashboard/streamlit_app.py
 - **Wind exposure and Psa disease risk aren't modelled.** Neither wind data nor Psa (bacterial canker) incidence/spread data is ingested anywhere in Terroir; the only Psa reference in this project is Apophenia's own risk indicator, used solely for the cross-project correlation, not as a scoring input. A real scope gap, not a checked-and-rejected decision. See `docs/methodology.md`, "Scope boundaries: wind/Psa, slope, and irrigation/licensing not modelled".
 - **Slope/terrain isn't modelled.** Machinery operability and orchard establishment cost are meaningfully affected by slope; no slope or terrain dataset was ingested or assessed — a distinct gap from the DEM/waterlogging exclusion above, not a restatement of it. See `docs/methodology.md`.
 - **Irrigation access and Zespri varietal licensing aren't modelled.** Physical water access/consent and Zespri's licensed-variety planting system both sit outside this project's 4 data sources and were never evaluated. `suitability_score` measures physical soil/climate suitability only — not commercial plantability. See `docs/methodology.md`.
-- **`expansion_candidates` still includes some urban/settlement land.** The underlying table only excludes the literal orchard/vineyard LCDB class, not built-up land — 12.7% of candidates are urban/settlement. The dashboard filters these at display time as an interim fix; the real fix (pushing the exclusion into `08_regional_summary_expansion.py` itself) is a documented but not-yet-done refinement. See `docs/methodology.md`.
+- **`expansion_candidates` still includes some urban/settlement land.** The underlying table only excludes the literal orchard/vineyard LCDB class, not built-up land — 12.7% of candidates are urban/settlement. The dashboard filters these at display time as an interim fix; the real fix (pushing the exclusion into `regional_summary_expansion.py` itself) is a documented but not-yet-done refinement. See `docs/methodology.md`.
 - **Centroid-based spatial joins have an inherent precision limit.** A parcel sitting close to a soil/LCDB/subzone polygon boundary can flip its match if its centroid shifts even slightly (e.g. from geometry simplification) — quantified and disclosed, not hidden, in `docs/methodology.md`'s "Geometry simplification moved to ingestion" section.
 - **The scoring weights (80/20 split) are a reasoned design choice, not a formally derived statistic.** Documented as an assumption open to revision, not presented as more rigorous than it is. See `docs/methodology.md`, "Weights".
 - **Whakatāne District has no Apophenia Comparison.** It's included in the soil suitability analysis (parcels, scoring, expansion candidates) but absent from the Apophenia Comparison page — Apophenia's 5 corridors were designed around distance-to-port scenarios and never included a Whakatāne corridor, so no cross-project comparison is possible for that district. See `docs/methodology.md`, "Cross-project comparison (business question 3)".

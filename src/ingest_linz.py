@@ -1,6 +1,6 @@
 # =============================================================================
 # TERROIR — LINZ Property Boundaries ingestion
-# Script: 01_ingest_linz.py
+# Script: ingest_linz.py
 # Stage:  Ingestion
 # Author: Gabriela Olivera | Data Analytics Portfolio
 # =============================================================================
@@ -52,8 +52,8 @@ verified there via the Douglas-Peucker guarantee and Web Mercator
 pixel-resolution math (shapely.simplify(preserve_topology=True) bounds
 every point to within `tolerance` of the original, not a heuristic).
 
-Downstream risk, checked rather than assumed: 02_ingest_soil_lcdb.py
-and 03_ingest_subzones.py both compute a centroid per parcel and
+Downstream risk, checked rather than assumed: ingest_soil_lcdb.py
+and ingest_subzones.py both compute a centroid per parcel and
 spatial-join it (predicate="within") against soil/LCDB/locality
 polygons — a simplification-shifted centroid could in principle cross
 a polygon boundary and change a match. Re-ran both against the
@@ -95,7 +95,7 @@ CQL_FILTER = "territorial_authority_ascii IN ({}) AND area > {}".format(
     AREA_THRESHOLD_M2,
 )
 
-# Exploration (src/00_explore_volumes.py) swept area thresholds client-side
+# Exploration (src/explore_volumes.py) swept area thresholds client-side
 # against a 109,513-parcel baseline that, due to the macron bug above, only
 # covered Tauranga City + Western Bay of Plenty District. With Opotiki
 # District now correctly included, a materially higher row count than the

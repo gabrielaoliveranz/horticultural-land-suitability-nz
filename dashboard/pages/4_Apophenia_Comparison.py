@@ -28,7 +28,7 @@ The -0.85 caveat below states a number I actually recomputed (Opotiki
 excluded: r drops to -0.76 at n=4), not an assumed "one point drives
 everything" narrative — that assumption turned out to overstate it:
 Opotiki is the extreme/leverage point but the correlation survives
-removing it, just weaker. (This was -0.86 before src/01_ingest_linz.py's
+removing it, just weaker. (This was -0.86 before src/ingest_linz.py's
 geometry-simplification move shifted Opotiki's mean_score by a
 centroid-boundary flip — see docs/methodology.md's "Geometry
 simplification moved to ingestion" section; the correlation itself is

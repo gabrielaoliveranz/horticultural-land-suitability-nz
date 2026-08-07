@@ -80,13 +80,13 @@ render at full precision — Streamlit's MessageSizeError, "Data of size
 not just slow). Full-precision parcel boundaries carry far more
 coordinate precision than a web map needs at any zoom this page uses.
 
-Simplification moved upstream into src/01_ingest_linz.py (was: this
+Simplification moved upstream into src/ingest_linz.py (was: this
 page's own load_map_data(), re-simplifying on every cold cache miss —
 see that script's own docstring for why and the measured cold-start
 numbers this was chasing). parcels_linz.geojson is now the
 already-simplified, already-precision-rounded canonical file; this
 page just reads it. Same tolerance as before the move (~5m max
-deviation, ~11cm precision grid) — see 01_ingest_linz.py for the
+deviation, ~11cm precision grid) — see ingest_linz.py for the
 Douglas-Peucker guarantee and pixel-resolution math, not repeated here
 since it's no longer this page's own derivation to justify.
 
@@ -169,8 +169,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 PARCELS_PATH = PROJECT_ROOT / "data" / "processed" / "parcels_linz.geojson"
 DB_PATH = PROJECT_ROOT / "data" / "processed" / "terroir.db"
 
-# Same bins/right=False as 05_subzone_summary.py and
-# 08_regional_summary_expansion.py — see docs/methodology.md, "Score
+# Same bins/right=False as subzone_summary.py and
+# regional_summary_expansion.py — see docs/methodology.md, "Score
 # distribution and suitability levels" (the boundary-bug fix).
 LEVEL_BINS = [-float("inf"), 5.0, 8.0, float("inf")]
 LEVEL_LABELS = ["Marginal", "Good", "Excellent"]
@@ -218,7 +218,7 @@ def load_map_data():
 
     with sqlite3.connect(DB_PATH) as conn:
         # parcel_scores already carries subzone (copied at scoring time
-        # in 04_calculate_score.py) — no join needed.
+        # in calculate_score.py) — no join needed.
         scores = pd.read_sql("SELECT source_id, suitability_score, subzone FROM parcel_scores", conn)
 
     merged = parcels.merge(scores, on="source_id", how="inner")

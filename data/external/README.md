@@ -14,7 +14,7 @@ the primary climate source (Open-Meteo) — e.g. Stats NZ regional data.
   operational data** (real freight volumes, real incident logs) — see
   `docs/methodology.md`, "Cross-project comparison (business question
   3)" for the full caveat governing how any result using this file may
-  be interpreted. Used by `src/06_cross_project_comparison.py`.
+  be interpreted. Used by `src/cross_project_comparison.py`.
 
 ## Status
 

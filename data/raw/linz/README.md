@@ -20,7 +20,7 @@ requires attribution. Logged in `docs/attributions.md`.
 
 ## Status
 
-Access confirmed (Fase 0). Ingestion is complete (`src/01_ingest_linz.py`,
+Access confirmed (Fase 0). Ingestion is complete (`src/ingest_linz.py`,
 22,834 parcels) — this folder stays empty by design, not because
 ingestion hasn't happened: the pipeline fetches WFS responses live on
 each run and writes straight to `data/processed/parcels_linz.geojson`,

@@ -50,7 +50,7 @@ dashboard/
   hover tooltip. Full precision genuinely exceeded Streamlit's 200MB
   message size limit for the "All" view (229MB) — geometry is
   simplified (~5m tolerance) and coordinates rounded (6dp) once at
-  ingestion time in `src/01_ingest_linz.py`, not on every cold page
+  ingestion time in `src/ingest_linz.py`, not on every cold page
   load; see that script's and the page's own docstrings for the
   numbers.
 - `3_Expansion_Candidates.py` — **built**. Parcel-level pydeck map of
@@ -60,7 +60,7 @@ dashboard/
   classes at the display layer (13,040 → 11,378 shown) — a known gap in
   the underlying `expansion_candidates` table itself, logged in
   `docs/methodology.md` as a refinement still to push back into
-  `08_regional_summary_expansion.py`.
+  `regional_summary_expansion.py`.
 - `4_Apophenia_Comparison.py` — **built**. Business question 3:
   `cross_project_comparison` (5 subzones) shown as a real-vs-synthetic
   table (Terroir's `mean_score` next to Apophenia's 3 synthetic risk

@@ -8,49 +8,49 @@ analysis and modelling.
 Fase 2 ingestion and Fase 3 scoring complete. Two files generated so far
 (seven tables total in `terroir.db`):
 
-- `parcels_linz.geojson` — `src/01_ingest_linz.py` (LINZ Property
+- `parcels_linz.geojson` — `src/ingest_linz.py` (LINZ Property
   Boundaries, all 4 target TAs + 1 ha area filter, 22,834 parcels:
   Western Bay of Plenty District 11,028, Whakatane District 5,434,
   Tauranga City 3,237, Ōpōtiki District 3,135).
 - `terroir.db` (SQLite), seven tables:
-  - `parcel_attributes` — `src/02_ingest_soil_lcdb.py` +
-    `src/03_ingest_subzones.py` (keyed on `source_id`, not `parcel_id` —
+  - `parcel_attributes` — `src/ingest_soil_lcdb.py` +
+    `src/ingest_subzones.py` (keyed on `source_id`, not `parcel_id` —
     see script docstrings): soil_depth, soil_texture, soil_drainage,
     soil_order (94.1% match), lcdb_class_2023 (99.7% match), and subzone
     (18.0% match — only parcels within Apophenia's 5 named subzones get
     one, by design; Whakatane District isn't one of them, so it's almost
     entirely NULL here). See `docs/methodology.md`, "Handling unmatched
     parcels (nulls)".
-  - `parcel_scores` — `src/04_calculate_score.py` (keyed on
+  - `parcel_scores` — `src/calculate_score.py` (keyed on
     `source_id`): suitability_score (0-10) plus the per-factor points
     and weights it's built from, for 21,491 parcels (the 1,343 with a
     null soil attribute are excluded, not scored). See
     `docs/methodology.md`, "Point tables" / "Weights" / "Score
     distribution and suitability levels".
-  - `subzone_summary` — `src/05_subzone_summary.py` (keyed on
+  - `subzone_summary` — `src/subzone_summary.py` (keyed on
     `subzone`): parcel count, mean score, and %
     Excellent/Good/Marginal per subzone, for the 4,103 scored parcels
     within the 5 named subzones.
-  - `cross_project_comparison` — `src/06_cross_project_comparison.py`
+  - `cross_project_comparison` — `src/cross_project_comparison.py`
     (keyed on `subzone`): Terroir's mean_score joined against
     Apophenia's corridor risk indicators, plus the Pearson correlation
     between them. See `docs/methodology.md`, "Cross-project comparison
     (business question 3)" for the real-vs-synthetic caveat.
-  - `subzone_climate_risk` — `src/07_ingest_climate_risk.py` (keyed on
+  - `subzone_climate_risk` — `src/ingest_climate_risk.py` (keyed on
     `subzone`): frost days, chill hours, and heavy rain days (2016-2025,
     raw totals plus per-year figures) at one representative point per
     subzone. Unaffected by the Whakatane District scope expansion (not
     one of the 5 named subzones this table is keyed on), so not
     re-run — see `docs/methodology.md`, "Climate risk ingestion
     (business question 5)".
-  - `suitability_levels_summary` — `src/08_regional_summary_expansion.py`
+  - `suitability_levels_summary` — `src/regional_summary_expansion.py`
     (keyed on `suitability_level`): count and % Excellent/Good/Marginal
     across all 21,491 scored parcels region-wide (Excellent 76.4%, Good
     18.1%, Marginal 5.5%) — the full-region counterpart to
     `subzone_summary`'s 5-named-subzone view (which runs noticeably
     higher, 88.9% weighted-average Excellent, since Whakatane pulls the
     region-wide figure down).
-  - `expansion_candidates` — `src/08_regional_summary_expansion.py`
+  - `expansion_candidates` — `src/regional_summary_expansion.py`
     (keyed on `source_id`, no geometry — join back to
     `parcels_linz.geojson` for mapping): the 13,040 parcels with
     suitability_score >= 8.0 that aren't already LCDB-classified as
@@ -77,10 +77,10 @@ started shipping with the repo via LFS.
 
 If you need to regenerate these files from scratch (e.g. after a
 scope/methodology change), run the scripts in `src/` in order
-(`python src/01_ingest_linz.py`, then `02_ingest_soil_lcdb.py`,
-`03_ingest_subzones.py`, `04_calculate_score.py`,
-`05_subzone_summary.py`, `06_cross_project_comparison.py`,
-`07_ingest_climate_risk.py`, and `08_regional_summary_expansion.py`).
+(`python src/ingest_linz.py`, then `ingest_soil_lcdb.py`,
+`ingest_subzones.py`, `calculate_score.py`,
+`subzone_summary.py`, `cross_project_comparison.py`,
+`ingest_climate_risk.py`, and `regional_summary_expansion.py`).
 Requires a `.env` with valid API keys — see docs/data_sources.md. The
 regenerated files overwrite what's already here; commit them the same
 way as any other change (Git LFS picks them up automatically via the

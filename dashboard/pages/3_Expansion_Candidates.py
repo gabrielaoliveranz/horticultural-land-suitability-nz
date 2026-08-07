@@ -12,7 +12,7 @@ instead of suitability level, plus a subzone filter (5 named + "outside"
 + "All").
 
 Urban exclusion (display-layer fix, not yet in the underlying data):
-expansion_candidates as computed by 08_regional_summary_expansion.py
+expansion_candidates as computed by regional_summary_expansion.py
 includes parcels classified as "Built-up Area (settlement)" and "Urban
 Parkland/Open Space" — land that's already built on, not genuine
 horticultural expansion land. This was flagged as a gap the first time
@@ -22,7 +22,7 @@ page excludes those 2 classes itself: 1,662 of 13,040 candidates
 (12.7%) are dropped, leaving 11,378 shown here. This is reasonable for
 now but is a display-layer patch, not a real fix — logged in
 docs/methodology.md as a refinement to push back into
-08_regional_summary_expansion.py itself, so every consumer of
+regional_summary_expansion.py itself, so every consumer of
 expansion_candidates gets the correct set, not just this page.
 
 LCDB class colours are a functional placeholder: 22 distinct classes
@@ -32,7 +32,7 @@ levels). Colours here are an evenly-spaced hue rotation, not a styled
 brand palette — real categorical design is future work, same "minimal
 styling for now" framing as every other page so far.
 
-Geometry arrives pre-simplified/rounded from src/01_ingest_linz.py (moved
+Geometry arrives pre-simplified/rounded from src/ingest_linz.py (moved
 there from this page's own runtime load — see that script's docstring
 for why and 2_Suitability_Map.py's docstring for the fuller derivation,
 not repeated here since it's no longer this page's own cost to justify).
@@ -59,7 +59,7 @@ components.py's docstrings for why both exist rather than just one.
 Copy pass (corpo tone): both intro captions referenced internal
 implementation detail visitors don't need — a doc file path, "business
 questions 1 and 2", "display-layer fix", and the upstream script
-filename (08_regional_summary_expansion.py). All of that stays in this
+filename (regional_summary_expansion.py). All of that stays in this
 docstring (where it belongs, for future maintainers) and was removed
 from the visitor-facing captions, which now just state what's shown and
 what's excluded, in plain terms.
@@ -96,7 +96,7 @@ subzone candidate counts turned out to look nothing alike, see below):
    page uses the same zoom levels (12 for a named subzone, 9 for
    All/outside) — see that page's own docstring for the full
    derivation rather than repeating it here. Since moved upstream into
-   src/01_ingest_linz.py — this page no longer pays the simplify cost
+   src/ingest_linz.py — this page no longer pays the simplify cost
    at runtime, it just reads the already-~5m-tolerance file.
 3. Audited to_geojson()'s column list against what the layer/tooltip
    actually reference: parcel_id, suitability_score, lcdb_class_2023,
@@ -118,7 +118,7 @@ of all candidates — one click away, not the default.
 Simplification moved upstream (after the above payload numbers were
 measured): this page's own load_candidate_data() used to call
 shapely.simplify()/set_precision() on every cold cache miss, same as
-2_Suitability_Map.py's load_map_data() — see src/01_ingest_linz.py's
+2_Suitability_Map.py's load_map_data() — see src/ingest_linz.py's
 docstring for why that got moved into ingestion instead. Payload sizes
 above are unchanged (same tolerance, same output geometry). Cold-start
 time (fresh server process, first load, deck.gl chart ready) went from

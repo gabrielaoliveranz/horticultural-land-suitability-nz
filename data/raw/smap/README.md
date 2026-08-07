@@ -22,7 +22,7 @@ combined with drainage is used as a proxy instead (see
 
 ## Status
 
-Access confirmed (Fase 0). Ingestion is complete (`src/02_ingest_soil_lcdb.py`,
+Access confirmed (Fase 0). Ingestion is complete (`src/ingest_soil_lcdb.py`,
 94.1% match rate) — this folder stays empty by design, not because
 ingestion hasn't happened: the pipeline fetches WFS responses live on
 each run and writes straight to `parcel_attributes` in

@@ -52,7 +52,7 @@ reasoning. Not ruled out as a v2 extension.
 using the macron field will silently return zero matches for names typed
 without it. LINZ/LRIS layers generally expose an `_ascii` companion field —
 always filter on that field, never hardcode a plain-ASCII name expecting it
-to match. This caused 01_ingest_linz.py to silently exclude all of Opotiki
+to match. This caused ingest_linz.py to silently exclude all of Opotiki
 District from ingestion since the first Fase 2 run.
 
 **Scope completeness verification (Bay of Plenty region, 6 TAs total):**

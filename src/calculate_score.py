@@ -1,6 +1,6 @@
 # =============================================================================
 # TERROIR — Suitability score calculation
-# Script: 04_calculate_score.py
+# Script: calculate_score.py
 # Stage:  Scoring
 # Author: Gabriela Olivera | Data Analytics Portfolio
 # =============================================================================

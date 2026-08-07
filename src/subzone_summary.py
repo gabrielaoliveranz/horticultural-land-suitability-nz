@@ -1,6 +1,6 @@
 # =============================================================================
 # TERROIR — Subzone suitability summary
-# Script: 05_subzone_summary.py
+# Script: subzone_summary.py
 # Stage:  Scoring
 # Author: Gabriela Olivera | Data Analytics Portfolio
 # =============================================================================
@@ -14,7 +14,7 @@ per docs/methodology.md, "Score distribution and suitability levels").
 The join is inner on source_id against parcel_scores, so parcels excluded
 from scoring (null soil attribute) are excluded here too — the subzone
 parcel counts reported are therefore slightly below the raw subzone
-counts from 03_ingest_subzones.py (2,345+1,027+396+271+78 = 4,117
+counts from ingest_subzones.py (2,345+1,027+396+271+78 = 4,117
 in-region parcels, minus null-soil exclusions).
 
 Saves the result as a new table `subzone_summary` in

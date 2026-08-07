@@ -1,6 +1,6 @@
 # =============================================================================
 # TERROIR — Soil (S-map) and land-cover (LCDB) attribute join
-# Script: 02_ingest_soil_lcdb.py
+# Script: ingest_soil_lcdb.py
 # Stage:  Ingestion
 # Author: Gabriela Olivera | Data Analytics Portfolio
 # =============================================================================
@@ -12,7 +12,7 @@ and spatial-joins (predicate="within") each centroid against:
   - LCDB layer 123148 (Name_2023 only)
 all bbox-filtered to the Bay of Plenty extent defined below (see "Bbox
 note" further down — this extent supersedes the narrower one originally
-explored in src/00_explore_volumes.py).
+explored in src/explore_volumes.py).
 
 Assembles source_id, parcel_id, soil_depth, soil_texture, soil_drainage,
 soil_order, lcdb_class_2023 into one table and saves it as
@@ -30,7 +30,7 @@ different geometry, area, and valuation_reference). `source_id` is
 unique across all 14,265 rows. Joining/indexing on parcel_id silently
 broadcasts one row's spatial-join result onto every other row sharing
 its parcel_id — found via a mismatched row count while building
-03_ingest_subzones.py. `parcel_id` is kept as a plain reference column,
+ingest_subzones.py. `parcel_id` is kept as a plain reference column,
 not a key.
 
 Data quality note (bbox): raw parcel geometry bounds are NOT used to
@@ -45,7 +45,7 @@ the correct outcome for them.
 Bbox note: widened from the original (175.7, -38.2, 177.4, -37.2) to
 (175.7, -38.9, 178.2, -37.2). That original box was sized against a
 2-of-3-TA dataset (Opotiki District was silently excluded by a macron
-bug in 01_ingest_linz.py's CQL filter — see docs/data_sources.md,
+bug in ingest_linz.py's CQL filter — see docs/data_sources.md,
 "Technical note (macrons)"). With Opotiki District correctly included,
 its real extent reaches lon 178.15 / lat -38.82 (East Cape localities
 like Cape Runaway, Whanarua Bay) — the old box would have silently

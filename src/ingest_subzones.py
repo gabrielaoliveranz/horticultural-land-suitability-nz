@@ -1,12 +1,12 @@
 # =============================================================================
 # TERROIR — Subzone assignment (NZ Suburbs and Localities)
-# Script: 03_ingest_subzones.py
+# Script: ingest_subzones.py
 # Stage:  Ingestion
 # Author: Gabriela Olivera | Data Analytics Portfolio
 # =============================================================================
 """
 Loads parcel centroids from data/processed/parcels_linz.geojson (same
-approach as 02_ingest_soil_lcdb.py), fetches LINZ layer 113764 (NZ Suburbs
+approach as ingest_soil_lcdb.py), fetches LINZ layer 113764 (NZ Suburbs
 and Localities) bbox-filtered to the Bay of Plenty extent, and spatial-
 joins (predicate="within") to derive each parcel's Apophenia subzone:
 
@@ -20,13 +20,13 @@ Adds a `subzone` column to the existing `parcel_attributes` table in
 data/processed/terroir.db via an SQL UPDATE keyed on source_id — the
 table is not rebuilt.
 
-Key note (see 02_ingest_soil_lcdb.py's docstring for the full story):
+Key note (see ingest_soil_lcdb.py's docstring for the full story):
 parcel_id is NOT unique (only 11,936 of 14,265 values are — a fact this
 script's row count surfaced during development). source_id is the real
 unique key and is what every join/update here uses; parcel_id is only
 carried through as a reference column.
 
-CRS note (same lesson as 02_ingest_soil_lcdb.py): explicitly requests
+CRS note (same lesson as ingest_soil_lcdb.py): explicitly requests
 srsName=EPSG:4326 and verifies it against the response's own declared
 `crs` field rather than assuming.
 
@@ -41,9 +41,9 @@ against the `_ascii` companion fields (name_ascii, major_name_ascii)
 consistently, per docs/data_sources.md, "Technical note (macrons)".
 
 Bbox note: widened from the original (175.7, -38.2, 177.4, -37.2) to
-(175.7, -38.9, 178.2, -37.2) — see 02_ingest_soil_lcdb.py's docstring.
+(175.7, -38.9, 178.2, -37.2) — see ingest_soil_lcdb.py's docstring.
 The original box was sized before Opotiki District was correctly
-included in the dataset (see 01_ingest_linz.py) and would have missed
+included in the dataset (see ingest_linz.py) and would have missed
 the Ōpōtiki locality/suburb polygons this script depends on.
 """
 
@@ -67,7 +67,7 @@ REQUEST_TIMEOUT = 120
 EXPECTED_CRS = "EPSG::4326"
 
 # Bay of Plenty bounding box (Katikati to East Cape) — same widened
-# extent as src/02_ingest_soil_lcdb.py; see module docstring's bbox note.
+# extent as src/ingest_soil_lcdb.py; see module docstring's bbox note.
 BOP_BBOX_COORDS = (175.7, -38.9, 178.2, -37.2)
 BOP_BBOX = "{},{},{},{},urn:ogc:def:crs:OGC:1.3:CRS84".format(*BOP_BBOX_COORDS)
 
