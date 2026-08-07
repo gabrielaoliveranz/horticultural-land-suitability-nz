@@ -21,7 +21,8 @@ horticultural-land-suitability-nz/
 ├── README.md
 ├── PRODUCT.md                   # design/product decisions (Impeccable skill)
 ├── CLAUDE.md                    # project-specific working conventions
-├── requirements.txt              # Python dependencies
+├── requirements.txt              # Python dependencies (pinned)
+├── requirements-dev.txt          # + dev-only tools (colorspacious)
 ├── package.json                  # Playwright (dashboard testing), devDependency only
 ├── .streamlit/config.toml        # dashboard theme (colours, fonts, radius)
 ├── .env                          # LINZ_API_KEY, LRIS_API_KEY (not committed)
@@ -89,6 +90,7 @@ cd horticultural-land-suitability-nz
 python -m venv .venv
 .venv\Scripts\activate        # Windows; source .venv/bin/activate on macOS/Linux
 pip install -r requirements.txt
+# pip install -r requirements-dev.txt   # only if running tests or the colorspacious accessibility check
 
 # .env — see docs/data_sources.md for how each key was obtained:
 # LINZ_API_KEY  (LINZ Data Service / Koordinates account)
