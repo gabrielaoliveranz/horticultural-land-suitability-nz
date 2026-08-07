@@ -63,6 +63,7 @@ states the risk existed and was checked, not the specific numbers,
 which would go stale here without a corresponding pipeline re-run).
 """
 
+import logging
 import os
 
 import geopandas
@@ -70,7 +71,9 @@ import shapely
 from dotenv import load_dotenv
 
 from api_retry import get_with_retry
-from config import DATA_PROCESSED_DIR, PARCELS_PATH
+from config import DATA_PROCESSED_DIR, PARCELS_PATH, configure_logging
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -108,8 +111,14 @@ EXPECTED_ROW_COUNT_APPROX = 14_265
 SIMPLIFY_TOLERANCE_DEG = 0.00005   # ~5m max deviation at this latitude
 PRECISION_GRID_DEG = 1e-6          # 6 decimal places, ~11cm
 
-def fetch_all_features(base_url, layer_id, cql_filter, page_size=PAGE_SIZE):
-    features = []
+
+def fetch_all_features(
+    base_url: str,
+    layer_id: int,
+    cql_filter: str,
+    page_size: int = PAGE_SIZE,
+) -> list[dict]:
+    features: list[dict] = []
     start_index = 0
     while True:
         params = {
@@ -126,10 +135,12 @@ def fetch_all_features(base_url, layer_id, cql_filter, page_size=PAGE_SIZE):
             # EPSG:4326, matching the crs we label the GeoDataFrame with.
             "srsName": "urn:ogc:def:crs:EPSG::4326",
         }
-        response = get_with_retry(base_url, params=params, timeout=REQUEST_TIMEOUT)
+        response = get_with_retry(
+            base_url, params=params, timeout=REQUEST_TIMEOUT
+        )
         page_features = response.json().get("features", [])
         features.extend(page_features)
-        print(f"  fetched {len(features)} features so far...")
+        logger.info(f"  fetched {len(features)} features so far...")
 
         if len(page_features) < page_size:
             break
@@ -138,17 +149,19 @@ def fetch_all_features(base_url, layer_id, cql_filter, page_size=PAGE_SIZE):
     return features
 
 
-def main():
-    print(f"Fetching LINZ layer {LAYER_ID} with filter:\n  {CQL_FILTER}")
+def main() -> None:
+    logger.info(f"Fetching LINZ layer {LAYER_ID} with filter:\n  {CQL_FILTER}")
     features = fetch_all_features(LINZ_WFS_BASE, LAYER_ID, CQL_FILTER)
 
     gdf = geopandas.GeoDataFrame.from_features(features, crs="EPSG:4326")
 
-    print(
-        f"\nSimplifying geometry (tolerance={SIMPLIFY_TOLERANCE_DEG} deg "
+    logger.info(
+        f"Simplifying geometry (tolerance={SIMPLIFY_TOLERANCE_DEG} deg "
         f"~5m, precision grid={PRECISION_GRID_DEG} ~11cm)..."
     )
-    gdf["geometry"] = gdf.geometry.simplify(SIMPLIFY_TOLERANCE_DEG, preserve_topology=True)
+    gdf["geometry"] = gdf.geometry.simplify(
+        SIMPLIFY_TOLERANCE_DEG, preserve_topology=True
+    )
     gdf["geometry"] = gdf.geometry.apply(
         lambda g: shapely.set_precision(g, grid_size=PRECISION_GRID_DEG)
     )
@@ -156,11 +169,12 @@ def main():
     DATA_PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
     gdf.to_file(PARCELS_PATH, driver="GeoJSON")
 
-    print(f"\nSaved {len(gdf)} parcels (pre-simplified) to {PARCELS_PATH}")
-    print(
-        f"Prior runs reported approx. {EXPECTED_ROW_COUNT_APPROX:,} parcels — "
-        f"that figure only covered 2 of 3 TAs due to the macron bug fixed "
-        f"above, so a materially higher count here is correct, not a bug."
+    logger.info(f"Saved {len(gdf)} parcels (pre-simplified) to {PARCELS_PATH}")
+    logger.info(
+        f"Prior runs reported approx. {EXPECTED_ROW_COUNT_APPROX:,} "
+        f"parcels — that figure only covered 2 of 3 TAs due to the "
+        f"macron bug fixed above, so a materially higher count here is "
+        f"correct, not a bug."
     )
 
     assert DATA_PROCESSED_DIR.exists(), (
@@ -169,4 +183,5 @@ def main():
 
 
 if __name__ == "__main__":
+    configure_logging()
     main()

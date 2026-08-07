@@ -38,9 +38,14 @@ geometry is duplicated into this table.
 Both parts save into data/processed/terroir.db and print their summary.
 """
 
+import logging
+from pathlib import Path
+
 import pandas as pd
 
-from config import DB_PATH, get_connection
+from config import DB_PATH, configure_logging, get_connection
+
+logger = logging.getLogger(__name__)
 
 SCORES_TABLE = "parcel_scores"
 ATTRIBUTES_TABLE = "parcel_attributes"
@@ -57,24 +62,31 @@ ORCHARD_CLASS = "Orchard, Vineyard or Other Perennial Crop"
 OUTSIDE_SUBZONES_LABEL = "Outside the 5 named subzones"
 
 
-def load_scores(db_path):
-    with get_connection(db_path) as conn:
-        return pd.read_sql(f"SELECT source_id, suitability_score FROM {SCORES_TABLE}", conn)
-
-
-def load_attributes(db_path):
+def load_scores(db_path: Path) -> pd.DataFrame:
     with get_connection(db_path) as conn:
         return pd.read_sql(
-            f"SELECT source_id, lcdb_class_2023, subzone FROM {ATTRIBUTES_TABLE}", conn,
+            f"SELECT source_id, suitability_score FROM {SCORES_TABLE}", conn
         )
 
 
-def compute_levels_summary(scores):
+def load_attributes(db_path: Path) -> pd.DataFrame:
+    with get_connection(db_path) as conn:
+        return pd.read_sql(
+            f"SELECT source_id, lcdb_class_2023, subzone "
+            f"FROM {ATTRIBUTES_TABLE}",
+            conn,
+        )
+
+
+def compute_levels_summary(scores: pd.DataFrame) -> pd.DataFrame:
     # right=False: see subzone_summary.py's summarise() for why — matches
     # the documented "Excellent: 8.0-10.0" / "Good: 5.0-7.9" spec exactly,
     # and keeps this consistent with compute_expansion_candidates() below,
     # which filters on the same >= 8.0 boundary.
-    levels = pd.cut(scores["suitability_score"], bins=LEVEL_BINS, labels=LEVEL_LABELS, right=False)
+    levels = pd.cut(
+        scores["suitability_score"],
+        bins=LEVEL_BINS, labels=LEVEL_LABELS, right=False,
+    )
     counts = levels.value_counts().reindex(LEVEL_LABELS)
     total = len(scores)
 
@@ -86,22 +98,28 @@ def compute_levels_summary(scores):
     return summary
 
 
-def print_levels_summary(summary, total):
+def print_levels_summary(summary: pd.DataFrame, total: int) -> None:
     headers = ["Level", "Parcels", "% of total"]
     widths = [12, 10, 12]
 
-    def fmt_row(values):
+    def fmt_row(values: list) -> str:
         return "  ".join(str(v).ljust(w) for v, w in zip(values, widths))
 
-    print(f"\nSuitability levels, region-wide ({total:,} scored parcels):")
-    print(fmt_row(headers))
-    print("  ".join("-" * w for w in widths))
+    logger.info(f"Suitability levels, region-wide ({total:,} scored parcels):")
+    logger.info(fmt_row(headers))
+    logger.info("  ".join("-" * w for w in widths))
     for _, row in summary.iterrows():
-        print(fmt_row([row["suitability_level"], f"{row['parcel_count']:,}", f"{row['pct']}%"]))
-    print()
+        logger.info(fmt_row([
+            row["suitability_level"],
+            f"{row['parcel_count']:,}",
+            f"{row['pct']}%",
+        ]))
+    logger.info("")
 
 
-def compute_expansion_candidates(scores, attributes):
+def compute_expansion_candidates(
+    scores: pd.DataFrame, attributes: pd.DataFrame
+) -> pd.DataFrame:
     merged = scores.merge(attributes, on="source_id", how="inner")
     is_excellent = merged["suitability_score"] >= EXCELLENT_THRESHOLD
     is_not_orchard = merged["lcdb_class_2023"] != ORCHARD_CLASS
@@ -110,56 +128,68 @@ def compute_expansion_candidates(scores, attributes):
     ]].reset_index(drop=True)
 
 
-def print_expansion_summary(candidates):
-    print(f"Expansion candidates (suitability_score >= {EXCELLENT_THRESHOLD}, "
-          f"not already {ORCHARD_CLASS!r}): {len(candidates):,} parcels")
+def print_expansion_summary(candidates: pd.DataFrame) -> None:
+    logger.info(
+        f"Expansion candidates (suitability_score >= "
+        f"{EXCELLENT_THRESHOLD}, not already {ORCHARD_CLASS!r}): "
+        f"{len(candidates):,} parcels"
+    )
 
-    breakdown = candidates["subzone"].fillna(OUTSIDE_SUBZONES_LABEL).value_counts()
+    breakdown = (
+        candidates["subzone"].fillna(OUTSIDE_SUBZONES_LABEL).value_counts()
+    )
 
     headers = ["Subzone", "Parcels"]
     widths = [30, 10]
 
-    def fmt_row(values):
+    def fmt_row(values: list) -> str:
         return "  ".join(str(v).ljust(w) for v, w in zip(values, widths))
 
-    print()
-    print(fmt_row(headers))
-    print("  ".join("-" * w for w in widths))
+    logger.info("")
+    logger.info(fmt_row(headers))
+    logger.info("  ".join("-" * w for w in widths))
     for subzone, count in breakdown.items():
-        print(fmt_row([subzone, f"{count:,}"]))
-    print()
+        logger.info(fmt_row([subzone, f"{count:,}"]))
+    logger.info("")
 
 
-def save_table(db_path, table_name, df, key_column):
+def save_table(
+    db_path: Path, table_name: str, df: pd.DataFrame, key_column: str
+) -> None:
     with get_connection(db_path) as conn:
         df.to_sql(table_name, conn, if_exists="replace", index=False)
         conn.execute(
             f"CREATE INDEX IF NOT EXISTS idx_{table_name}_{key_column} "
             f"ON {table_name}({key_column})"
         )
-    print(f"Saved {len(df):,} rows to table '{table_name}' in {db_path}")
+    logger.info(f"Saved {len(df):,} rows to table '{table_name}' in {db_path}")
 
 
-def main():
-    print(f"Loading {SCORES_TABLE} from {DB_PATH}...")
+def main() -> None:
+    logger.info(f"Loading {SCORES_TABLE} from {DB_PATH}...")
     scores = load_scores(DB_PATH)
-    print(f"  {len(scores):,} scored parcels loaded")
+    logger.info(f"  {len(scores):,} scored parcels loaded")
 
     # Part 1 — business question 1, region-wide.
     levels_summary = compute_levels_summary(scores)
     print_levels_summary(levels_summary, len(scores))
-    save_table(DB_PATH, LEVELS_SUMMARY_TABLE, levels_summary, "suitability_level")
+    save_table(
+        DB_PATH, LEVELS_SUMMARY_TABLE, levels_summary, "suitability_level"
+    )
 
     # Part 2 — business question 2, expansion candidates.
-    print(f"\nLoading {ATTRIBUTES_TABLE} (lcdb_class_2023, subzone)...")
+    logger.info(f"Loading {ATTRIBUTES_TABLE} (lcdb_class_2023, subzone)...")
     attributes = load_attributes(DB_PATH)
 
     candidates = compute_expansion_candidates(scores, attributes)
     print_expansion_summary(candidates)
     save_table(DB_PATH, EXPANSION_TABLE, candidates, "source_id")
 
-    assert DB_PATH.exists(), f"Expected output db {DB_PATH} not found — check path"
+    assert DB_PATH.exists(), (
+        f"Expected output db {DB_PATH} not found — check path"
+    )
 
 
 if __name__ == "__main__":
+    configure_logging()
     main()

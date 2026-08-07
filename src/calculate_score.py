@@ -32,9 +32,15 @@ than silently defaulting to 0, which would understate that parcel's
 score without any visible trace.
 """
 
+import logging
+from pathlib import Path
+from typing import Iterable
+
 import pandas as pd
 
-from config import DB_PATH, get_connection
+from config import DB_PATH, configure_logging, get_connection
+
+logger = logging.getLogger(__name__)
 
 SOIL_ORDER_POINTS = {
     "Allophanic": 10,
@@ -87,19 +93,23 @@ SOURCE_TABLE = "parcel_attributes"
 SCORE_TABLE = "parcel_scores"
 
 
-def load_parcel_attributes(db_path, table_name):
+def load_parcel_attributes(db_path: Path, table_name: str) -> pd.DataFrame:
     with get_connection(db_path) as conn:
         return pd.read_sql(f"SELECT * FROM {table_name}", conn)
 
 
-def exclude_unscoreable(df, soil_columns):
+def exclude_unscoreable(
+    df: pd.DataFrame, soil_columns: Iterable[str]
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     null_mask = df[list(soil_columns)].isna().any(axis=1)
     excluded = df.loc[null_mask]
     scoreable = df.loc[~null_mask].copy()
     return scoreable, excluded
 
 
-def map_points(series, points_table, column_name):
+def map_points(
+    series: pd.Series, points_table: dict, column_name: str
+) -> pd.Series:
     unmapped = set(series.unique()) - set(points_table.keys())
     if unmapped:
         raise ValueError(
@@ -110,48 +120,54 @@ def map_points(series, points_table, column_name):
     return series.map(points_table)
 
 
-def compute_scores(scoreable):
+def compute_scores(scoreable: pd.DataFrame) -> pd.DataFrame:
     for column in SOIL_COLUMNS:
         scoreable[f"{column}_pts"] = map_points(
             scoreable[column], POINT_TABLES[column], column
         )
 
     scoreable["suitability_score"] = sum(
-        scoreable[f"{column}_pts"] * WEIGHTS[column] for column in SOIL_COLUMNS
+        scoreable[f"{column}_pts"] * WEIGHTS[column]
+        for column in SOIL_COLUMNS
     ).round(2)
 
     return scoreable
 
 
-def report_distribution(scored):
+def report_distribution(scored: pd.DataFrame) -> None:
     s = scored["suitability_score"]
-    print(f"\nScore distribution ({len(scored):,} scored parcels):")
-    print(f"  min:    {s.min():.2f}")
-    print(f"  max:    {s.max():.2f}")
-    print(f"  mean:   {s.mean():.2f}")
-    print(f"  median: {s.median():.2f}")
+    logger.info(f"Score distribution ({len(scored):,} scored parcels):")
+    logger.info(f"  min:    {s.min():.2f}")
+    logger.info(f"  max:    {s.max():.2f}")
+    logger.info(f"  mean:   {s.mean():.2f}")
+    logger.info(f"  median: {s.median():.2f}")
 
 
-def report_extremes(scored, n=5):
+def report_extremes(scored: pd.DataFrame, n: int = 5) -> None:
     cols = ["source_id", "parcel_id", "subzone", "suitability_score"]
 
-    print(f"\nTop {n} parcels by suitability_score:")
-    print(scored.nlargest(n, "suitability_score")[cols].to_string(index=False))
+    logger.info(f"Top {n} parcels by suitability_score:")
+    logger.info(
+        scored.nlargest(n, "suitability_score")[cols].to_string(index=False)
+    )
 
-    print(f"\nBottom {n} parcels by suitability_score:")
-    print(scored.nsmallest(n, "suitability_score")[cols].to_string(index=False))
+    logger.info(f"Bottom {n} parcels by suitability_score:")
+    logger.info(
+        scored.nsmallest(n, "suitability_score")[cols].to_string(index=False)
+    )
 
 
-def main():
-    print(f"Loading {SOURCE_TABLE} from {DB_PATH}...")
+def main() -> None:
+    logger.info(f"Loading {SOURCE_TABLE} from {DB_PATH}...")
     df = load_parcel_attributes(DB_PATH, SOURCE_TABLE)
-    print(f"  {len(df):,} rows loaded")
+    logger.info(f"  {len(df):,} rows loaded")
 
     scoreable, excluded = exclude_unscoreable(df, SOIL_COLUMNS)
-    print(
-        f"\nExcluded {len(excluded):,} of {len(df):,} parcels "
-        f"({len(excluded) / len(df) * 100:.1f}%) with a null soil attribute "
-        f"— not scored, per docs/methodology.md's null-handling rule."
+    logger.warning(
+        f"Excluded {len(excluded):,} of {len(df):,} parcels "
+        f"({len(excluded) / len(df) * 100:.1f}%) with a null soil "
+        f"attribute — not scored, per docs/methodology.md's "
+        f"null-handling rule."
     )
 
     scored = compute_scores(scoreable)
@@ -176,10 +192,15 @@ def main():
             f"ON {SCORE_TABLE}(source_id)"
         )
 
-    print(f"\nSaved {len(result):,} rows to table '{SCORE_TABLE}' in {DB_PATH}")
+    logger.info(
+        f"Saved {len(result):,} rows to table '{SCORE_TABLE}' in {DB_PATH}"
+    )
 
-    assert DB_PATH.exists(), f"Expected output db {DB_PATH} not found — check path"
+    assert DB_PATH.exists(), (
+        f"Expected output db {DB_PATH} not found — check path"
+    )
 
 
 if __name__ == "__main__":
+    configure_logging()
     main()

@@ -47,14 +47,19 @@ included in the dataset (see ingest_linz.py) and would have missed
 the Ōpōtiki locality/suburb polygons this script depends on.
 """
 
+import logging
 import os
+from pathlib import Path
 
 import geopandas
 import numpy as np
+import pandas as pd
 import requests
 from dotenv import load_dotenv
 
-from config import DB_PATH, PARCELS_PATH, get_connection
+from config import DB_PATH, PARCELS_PATH, configure_logging, get_connection
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -79,16 +84,21 @@ TARGET_LOCALITIES = ("Katikati", "Te Puke", "Pongakawa", "Opotiki")
 TABLE_NAME = "parcel_attributes"
 
 
-def load_parcel_centroids(path):
+def load_parcel_centroids(path: Path) -> geopandas.GeoDataFrame:
     parcels = geopandas.read_file(path)
     centroids = parcels.to_crs(2193).geometry.centroid.to_crs(4326)
     return geopandas.GeoDataFrame(
-        {"source_id": parcels["source_id"], "parcel_id": parcels["parcel_id"]},
+        {
+            "source_id": parcels["source_id"],
+            "parcel_id": parcels["parcel_id"],
+        },
         geometry=centroids, crs=4326,
     )
 
 
-def fetch_localities(base_url, layer_id, bbox, page_size=PAGE_SIZE):
+def fetch_localities(
+    base_url: str, layer_id: int, bbox: str, page_size: int = PAGE_SIZE
+) -> geopandas.GeoDataFrame:
     features = []
     start_index = 0
     while True:
@@ -103,11 +113,15 @@ def fetch_localities(base_url, layer_id, bbox, page_size=PAGE_SIZE):
             "startIndex": start_index,
             "srsName": "urn:ogc:def:crs:EPSG::4326",
         }
-        response = requests.get(base_url, params=params, timeout=REQUEST_TIMEOUT)
+        response = requests.get(
+            base_url, params=params, timeout=REQUEST_TIMEOUT
+        )
         response.raise_for_status()
         payload = response.json()
 
-        declared_crs = payload.get("crs", {}).get("properties", {}).get("name", "")
+        declared_crs = (
+            payload.get("crs", {}).get("properties", {}).get("name", "")
+        )
         if EXPECTED_CRS not in declared_crs:
             raise ValueError(
                 f"Expected {EXPECTED_CRS} but WFS response declared crs="
@@ -123,7 +137,7 @@ def fetch_localities(base_url, layer_id, bbox, page_size=PAGE_SIZE):
     return geopandas.GeoDataFrame.from_features(features, crs=4326)
 
 
-def derive_subzone(joined):
+def derive_subzone(joined: pd.DataFrame) -> np.ndarray:
     conditions = [
         joined["major_name_ascii"] == TAURANGA_MAJOR_NAME,
         joined["name_ascii"].isin(TARGET_LOCALITIES),
@@ -135,24 +149,37 @@ def derive_subzone(joined):
     return np.select(conditions, choices, default=None)
 
 
-def report_subzones(result):
+def report_subzones(result: pd.DataFrame) -> None:
     total = len(result)
-    print(f"\nSubzone assignment (of {total:,} parcels):")
-    counts = result["subzone"].value_counts(dropna=True).sort_values(ascending=False)
+    logger.info(f"Subzone assignment (of {total:,} parcels):")
+    counts = (
+        result["subzone"].value_counts(dropna=True)
+        .sort_values(ascending=False)
+    )
     for subzone, n in counts.items():
-        print(f"  {subzone}: {n:,} ({n / total * 100:.1f}%)")
+        logger.info(f"  {subzone}: {n:,} ({n / total * 100:.1f}%)")
 
     n_null = result["subzone"].isna().sum()
-    print(f"  NULL (outside the 5 Apophenia subzones): {n_null:,} ({n_null / total * 100:.1f}%)")
+    logger.info(
+        f"  NULL (outside the 5 Apophenia subzones): {n_null:,} "
+        f"({n_null / total * 100:.1f}%)"
+    )
 
 
-def update_subzone_column(db_path, table_name, result):
+def update_subzone_column(
+    db_path: Path, table_name: str, result: pd.DataFrame
+) -> None:
     with get_connection(db_path) as conn:
-        existing_cols = [row[1] for row in conn.execute(f"PRAGMA table_info({table_name})")]
+        existing_cols = [
+            row[1]
+            for row in conn.execute(f"PRAGMA table_info({table_name})")
+        ]
         if "subzone" not in existing_cols:
             conn.execute(f"ALTER TABLE {table_name} ADD COLUMN subzone TEXT")
 
-        result[["source_id", "subzone"]].to_sql("subzone_lookup", conn, if_exists="replace", index=False)
+        result[["source_id", "subzone"]].to_sql(
+            "subzone_lookup", conn, if_exists="replace", index=False
+        )
         conn.execute(
             f"""
             UPDATE {table_name}
@@ -166,14 +193,16 @@ def update_subzone_column(db_path, table_name, result):
         conn.commit()
 
 
-def main():
-    print(f"Loading parcel centroids from {PARCELS_PATH}...")
+def main() -> None:
+    logger.info(f"Loading parcel centroids from {PARCELS_PATH}...")
     centroids = load_parcel_centroids(PARCELS_PATH)
-    print(f"  {len(centroids):,} parcel centroids computed")
+    logger.info(f"  {len(centroids):,} parcel centroids computed")
 
-    print(f"\nFetching LINZ layer {LAYER_ID} (NZ Suburbs and Localities)...")
+    logger.info(
+        f"Fetching LINZ layer {LAYER_ID} (NZ Suburbs and Localities)..."
+    )
     localities = fetch_localities(LINZ_WFS_BASE, LAYER_ID, BOP_BBOX)
-    print(f"  {len(localities):,} localities fetched")
+    logger.info(f"  {len(localities):,} localities fetched")
 
     joined = geopandas.sjoin(
         centroids[["source_id", "geometry"]],
@@ -193,10 +222,15 @@ def main():
     report_subzones(result)
 
     update_subzone_column(DB_PATH, TABLE_NAME, result)
-    print(f"\nUpdated 'subzone' column on table '{TABLE_NAME}' in {DB_PATH}")
+    logger.info(
+        f"Updated 'subzone' column on table '{TABLE_NAME}' in {DB_PATH}"
+    )
 
-    assert DB_PATH.exists(), f"Expected output db {DB_PATH} not found — check path"
+    assert DB_PATH.exists(), (
+        f"Expected output db {DB_PATH} not found — check path"
+    )
 
 
 if __name__ == "__main__":
+    configure_logging()
     main()

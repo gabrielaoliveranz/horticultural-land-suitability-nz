@@ -28,77 +28,105 @@ Saves the joined comparison table as `cross_project_comparison` in
 terroir.db and prints the table plus the correlation values.
 """
 
+import logging
+from pathlib import Path
+
 import pandas as pd
 
-from config import CORRIDOR_CSV_PATH, DB_PATH, get_connection
+from config import (
+    CORRIDOR_CSV_PATH,
+    DB_PATH,
+    configure_logging,
+    get_connection,
+)
+
+logger = logging.getLogger(__name__)
 
 SUMMARY_TABLE = "subzone_summary"
 COMPARISON_TABLE = "cross_project_comparison"
 
-RISK_INDICATORS = ("distance_port_km", "base_risk_weight", "psa_incidence_historical")
+RISK_INDICATORS = (
+    "distance_port_km", "base_risk_weight", "psa_incidence_historical",
+)
 
 
-def load_terroir_summary(db_path):
+def load_terroir_summary(db_path: Path) -> pd.DataFrame:
     with get_connection(db_path) as conn:
-        return pd.read_sql(f"SELECT subzone, mean_score FROM {SUMMARY_TABLE}", conn)
+        return pd.read_sql(
+            f"SELECT subzone, mean_score FROM {SUMMARY_TABLE}", conn
+        )
 
 
-def load_apophenia_corridors(csv_path):
+def load_apophenia_corridors(csv_path: Path) -> pd.DataFrame:
     return pd.read_csv(csv_path)
 
 
-def build_comparison(terroir, apophenia):
+def build_comparison(
+    terroir: pd.DataFrame, apophenia: pd.DataFrame
+) -> pd.DataFrame:
     columns = ["subzone", "mean_score", *RISK_INDICATORS]
     comparison = terroir.merge(apophenia, on="subzone", how="inner")[columns]
-    return comparison.sort_values("mean_score", ascending=False).reset_index(drop=True)
+    return comparison.sort_values(
+        "mean_score", ascending=False
+    ).reset_index(drop=True)
 
 
-def compute_correlations(comparison):
+def compute_correlations(comparison: pd.DataFrame) -> dict[str, float]:
     return {
         indicator: comparison["mean_score"].corr(comparison[indicator])
         for indicator in RISK_INDICATORS
     }
 
 
-def print_comparison(comparison):
+def print_comparison(comparison: pd.DataFrame) -> None:
     columns = ["subzone", "mean_score", *RISK_INDICATORS]
-    headers = ["Subzone", "Mean score", "Dist. port (km)", "Base risk wt", "PSA incidence"]
+    headers = [
+        "Subzone", "Mean score", "Dist. port (km)",
+        "Base risk wt", "PSA incidence",
+    ]
     widths = [12, 12, 16, 13, 14]
 
-    def fmt_row(values):
+    def fmt_row(values: list) -> str:
         return "  ".join(str(v).ljust(w) for v, w in zip(values, widths))
 
-    print()
-    print(fmt_row(headers))
-    print("  ".join("-" * w for w in widths))
+    logger.info("")
+    logger.info(fmt_row(headers))
+    logger.info("  ".join("-" * w for w in widths))
     for _, row in comparison.iterrows():
-        print(fmt_row([row[c] for c in columns]))
-    print()
+        logger.info(fmt_row([row[c] for c in columns]))
+    logger.info("")
 
 
-def print_correlations(correlations):
-    print("Pearson correlation: Terroir mean_score vs. each Apophenia risk indicator")
-    print("(n=5 subzones — directional signal only, not statistically powered)")
+def print_correlations(correlations: dict[str, float]) -> None:
+    logger.info(
+        "Pearson correlation: Terroir mean_score vs. each Apophenia risk "
+        "indicator"
+    )
+    logger.info(
+        "(n=5 subzones — directional signal only, not statistically "
+        "powered)"
+    )
     for indicator, r in correlations.items():
-        print(f"  {indicator}: r = {r:.3f}")
-    print()
+        logger.info(f"  {indicator}: r = {r:.3f}")
+    logger.info("")
 
 
-def main():
-    print(f"Loading {SUMMARY_TABLE} from {DB_PATH}...")
+def main() -> None:
+    logger.info(f"Loading {SUMMARY_TABLE} from {DB_PATH}...")
     terroir = load_terroir_summary(DB_PATH)
-    print(f"  {len(terroir)} subzones loaded")
+    logger.info(f"  {len(terroir)} subzones loaded")
 
-    print(f"Loading Apophenia corridor data from {CORRIDOR_CSV_PATH}...")
+    logger.info(f"Loading Apophenia corridor data from {CORRIDOR_CSV_PATH}...")
     apophenia = load_apophenia_corridors(CORRIDOR_CSV_PATH)
-    print(f"  {len(apophenia)} corridors loaded")
+    logger.info(f"  {len(apophenia)} corridors loaded")
 
     comparison = build_comparison(terroir, apophenia)
     if len(comparison) != len(terroir):
         raise ValueError(
-            f"Join on subzone dropped rows: {len(terroir)} Terroir subzones "
-            f"in, {len(comparison)} out — check subzone spelling agreement "
-            f"between subzone_summary and {CORRIDOR_CSV_PATH.name}."
+            f"Join on subzone dropped rows: {len(terroir)} Terroir "
+            f"subzones in, {len(comparison)} out — check subzone "
+            f"spelling agreement between subzone_summary and "
+            f"{CORRIDOR_CSV_PATH.name}."
         )
 
     print_comparison(comparison)
@@ -107,16 +135,24 @@ def main():
     print_correlations(correlations)
 
     with get_connection(DB_PATH) as conn:
-        comparison.to_sql(COMPARISON_TABLE, conn, if_exists="replace", index=False)
+        comparison.to_sql(
+            COMPARISON_TABLE, conn, if_exists="replace", index=False
+        )
         conn.execute(
-            f"CREATE UNIQUE INDEX IF NOT EXISTS idx_{COMPARISON_TABLE}_subzone "
-            f"ON {COMPARISON_TABLE}(subzone)"
+            f"CREATE UNIQUE INDEX IF NOT EXISTS "
+            f"idx_{COMPARISON_TABLE}_subzone ON {COMPARISON_TABLE}(subzone)"
         )
 
-    print(f"Saved {len(comparison)} rows to table '{COMPARISON_TABLE}' in {DB_PATH}")
+    logger.info(
+        f"Saved {len(comparison)} rows to table '{COMPARISON_TABLE}' in "
+        f"{DB_PATH}"
+    )
 
-    assert DB_PATH.exists(), f"Expected output db {DB_PATH} not found — check path"
+    assert DB_PATH.exists(), (
+        f"Expected output db {DB_PATH} not found — check path"
+    )
 
 
 if __name__ == "__main__":
+    configure_logging()
     main()

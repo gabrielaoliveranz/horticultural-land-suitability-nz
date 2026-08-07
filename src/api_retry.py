@@ -19,26 +19,42 @@ behind the specific bounds used here. Kept dependency-light: stdlib
 no new third-party retry library.
 """
 
+import logging
 import time
+from typing import Optional
 
 import requests
+
+logger = logging.getLogger(__name__)
 
 RETRYABLE_STATUS_CODES = frozenset({429, 500, 502, 503, 504})
 
 
-def get_with_retry(url, params=None, timeout=60, max_retries=4, backoff_base_seconds=1.0):
+def get_with_retry(
+    url: str,
+    params: Optional[dict] = None,
+    timeout: float = 60,
+    max_retries: int = 4,
+    backoff_base_seconds: float = 1.0,
+) -> requests.Response:
     attempt = 0
     while True:
         attempt += 1
         try:
             response = requests.get(url, params=params, timeout=timeout)
-        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+        except (
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+        ) as exc:
             if attempt > max_retries:
                 raise
-            _wait_before_retry(attempt, backoff_base_seconds, reason=type(exc).__name__)
+            _wait_before_retry(
+                attempt, backoff_base_seconds, reason=type(exc).__name__
+            )
             continue
 
-        if response.status_code in RETRYABLE_STATUS_CODES and attempt <= max_retries:
+        is_retryable = response.status_code in RETRYABLE_STATUS_CODES
+        if is_retryable and attempt <= max_retries:
             _wait_before_retry(
                 attempt, backoff_base_seconds,
                 reason=f"HTTP {response.status_code}",
@@ -52,7 +68,12 @@ def get_with_retry(url, params=None, timeout=60, max_retries=4, backoff_base_sec
         return response
 
 
-def _wait_before_retry(attempt, backoff_base_seconds, reason, retry_after=None):
+def _wait_before_retry(
+    attempt: int,
+    backoff_base_seconds: float,
+    reason: str,
+    retry_after: Optional[str] = None,
+) -> None:
     if retry_after is not None:
         try:
             delay = float(retry_after)
@@ -61,5 +82,7 @@ def _wait_before_retry(attempt, backoff_base_seconds, reason, retry_after=None):
     else:
         delay = backoff_base_seconds * (2 ** (attempt - 1))
 
-    print(f"  {reason} — retrying in {delay:.1f}s (attempt {attempt})...")
+    logger.warning(
+        f"  {reason} — retrying in {delay:.1f}s (attempt {attempt})..."
+    )
     time.sleep(delay)

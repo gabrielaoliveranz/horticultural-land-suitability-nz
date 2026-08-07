@@ -31,11 +31,17 @@ Saves the result as `subzone_climate_risk` in data/processed/terroir.db
 and prints the summary table.
 """
 
+import logging
+from pathlib import Path
+from typing import Any
+
 import geopandas
 import pandas as pd
 
 from api_retry import get_with_retry
-from config import DB_PATH, PARCELS_PATH, get_connection
+from config import DB_PATH, PARCELS_PATH, configure_logging, get_connection
+
+logger = logging.getLogger(__name__)
 
 ATTRIBUTES_TABLE = "parcel_attributes"
 CLIMATE_TABLE = "subzone_climate_risk"
@@ -53,11 +59,14 @@ CHILL_MONTHS = (5, 6, 7, 8)  # May-August dormancy window
 HEAVY_RAIN_THRESHOLD_MM = 25.0
 
 
-def load_subzone_points(parcels_path, db_path):
+def load_subzone_points(
+    parcels_path: Path, db_path: Path
+) -> geopandas.GeoDataFrame:
     parcels = geopandas.read_file(parcels_path)
     with get_connection(db_path) as conn:
         attributes = pd.read_sql(
-            f"SELECT source_id, subzone FROM {ATTRIBUTES_TABLE} WHERE subzone IS NOT NULL",
+            f"SELECT source_id, subzone FROM {ATTRIBUTES_TABLE} "
+            f"WHERE subzone IS NOT NULL",
             conn,
         )
 
@@ -80,7 +89,7 @@ def load_subzone_points(parcels_path, db_path):
     return avg_points[["subzone", "lon", "lat"]]
 
 
-def fetch_hourly_weather(lat, lon):
+def fetch_hourly_weather(lat: float, lon: float) -> pd.DataFrame:
     params = {
         "latitude": lat,
         "longitude": lon,
@@ -89,7 +98,9 @@ def fetch_hourly_weather(lat, lon):
         "hourly": "temperature_2m,precipitation",
         "timezone": TIMEZONE,
     }
-    response = get_with_retry(OPEN_METEO_ARCHIVE_URL, params=params, timeout=REQUEST_TIMEOUT)
+    response = get_with_retry(
+        OPEN_METEO_ARCHIVE_URL, params=params, timeout=REQUEST_TIMEOUT
+    )
     hourly = response.json()["hourly"]
 
     df = pd.DataFrame({
@@ -102,12 +113,13 @@ def fetch_hourly_weather(lat, lon):
     return df
 
 
-def compute_climate_risk(hourly):
+def compute_climate_risk(hourly: pd.DataFrame) -> dict[str, float]:
     daily_min_temp = hourly.groupby("date")["temperature_2m"].min()
     frost_days = int((daily_min_temp < FROST_THRESHOLD_C).sum())
 
     dormancy = hourly[hourly["month"].isin(CHILL_MONTHS)]
-    chill_hours_total = int((dormancy["temperature_2m"] < CHILL_THRESHOLD_C).sum())
+    below_chill = dormancy["temperature_2m"] < CHILL_THRESHOLD_C
+    chill_hours_total = int(below_chill.sum())
     chill_hours_annual_avg = round(chill_hours_total / N_YEARS, 1)
 
     daily_precip = hourly.groupby("date")["precipitation"].sum()
@@ -122,7 +134,7 @@ def compute_climate_risk(hourly):
     }
 
 
-def print_summary(results):
+def print_summary(results: list[dict[str, Any]]) -> None:
     headers = [
         "Subzone", "Lat", "Lon",
         "Frost (10yr)", "Frost/yr",
@@ -131,14 +143,14 @@ def print_summary(results):
     ]
     widths = [12, 10, 10, 13, 9, 13, 18, 14]
 
-    def fmt_row(values):
+    def fmt_row(values: list[Any]) -> str:
         return "  ".join(str(v).ljust(w) for v, w in zip(values, widths))
 
-    print()
-    print(fmt_row(headers))
-    print("  ".join("-" * w for w in widths))
+    logger.info("")
+    logger.info(fmt_row(headers))
+    logger.info("  ".join("-" * w for w in widths))
     for row in results:
-        print(fmt_row([
+        logger.info(fmt_row([
             row["subzone"],
             f"{row['lat']:.4f}",
             f"{row['lon']:.4f}",
@@ -148,20 +160,27 @@ def print_summary(results):
             row["heavy_rain_days"],
             row["heavy_rain_days_per_year"],
         ]))
-    print()
+    logger.info("")
 
 
-def main():
-    print(f"Computing representative point per subzone from {PARCELS_PATH}...")
+def main() -> None:
+    logger.info(
+        f"Computing representative point per subzone from {PARCELS_PATH}..."
+    )
     points = load_subzone_points(PARCELS_PATH, DB_PATH)
-    print(f"  {len(points)} subzone points computed")
+    logger.info(f"  {len(points)} subzone points computed")
 
     results = []
     for _, point in points.iterrows():
         subzone, lat, lon = point["subzone"], point["lat"], point["lon"]
-        print(f"\nFetching Open-Meteo history for {subzone} ({lat:.4f}, {lon:.4f})...")
+        logger.info(
+            f"Fetching Open-Meteo history for {subzone} "
+            f"({lat:.4f}, {lon:.4f})..."
+        )
         hourly = fetch_hourly_weather(lat, lon)
-        print(f"  {len(hourly):,} hourly records ({START_DATE} to {END_DATE})")
+        logger.info(
+            f"  {len(hourly):,} hourly records ({START_DATE} to {END_DATE})"
+        )
 
         risk = compute_climate_risk(hourly)
         results.append({"subzone": subzone, "lat": lat, "lon": lon, **risk})
@@ -170,16 +189,24 @@ def main():
 
     result_df = pd.DataFrame(results)
     with get_connection(DB_PATH) as conn:
-        result_df.to_sql(CLIMATE_TABLE, conn, if_exists="replace", index=False)
+        result_df.to_sql(
+            CLIMATE_TABLE, conn, if_exists="replace", index=False
+        )
         conn.execute(
             f"CREATE UNIQUE INDEX IF NOT EXISTS idx_{CLIMATE_TABLE}_subzone "
             f"ON {CLIMATE_TABLE}(subzone)"
         )
 
-    print(f"Saved {len(result_df)} rows to table '{CLIMATE_TABLE}' in {DB_PATH}")
+    logger.info(
+        f"Saved {len(result_df)} rows to table '{CLIMATE_TABLE}' in "
+        f"{DB_PATH}"
+    )
 
-    assert DB_PATH.exists(), f"Expected output db {DB_PATH} not found — check path"
+    assert DB_PATH.exists(), (
+        f"Expected output db {DB_PATH} not found — check path"
+    )
 
 
 if __name__ == "__main__":
+    configure_logging()
     main()

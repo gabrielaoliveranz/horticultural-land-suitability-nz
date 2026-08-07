@@ -21,9 +21,14 @@ Saves the result as a new table `subzone_summary` in
 data/processed/terroir.db and prints it as a table.
 """
 
+import logging
+from pathlib import Path
+
 import pandas as pd
 
-from config import DB_PATH, get_connection
+from config import DB_PATH, configure_logging, get_connection
+
+logger = logging.getLogger(__name__)
 
 SCORES_TABLE = "parcel_scores"
 ATTRIBUTES_TABLE = "parcel_attributes"
@@ -34,23 +39,28 @@ LEVEL_BINS = [-float("inf"), 5.0, 8.0, float("inf")]
 LEVEL_LABELS = ["Marginal", "Good", "Excellent"]
 
 
-def load_scored_subzones(db_path):
+def load_scored_subzones(db_path: Path) -> pd.DataFrame:
     with get_connection(db_path) as conn:
-        scores = pd.read_sql(f"SELECT source_id, suitability_score FROM {SCORES_TABLE}", conn)
-        attributes = pd.read_sql(f"SELECT source_id, subzone FROM {ATTRIBUTES_TABLE}", conn)
+        scores = pd.read_sql(
+            f"SELECT source_id, suitability_score FROM {SCORES_TABLE}", conn
+        )
+        attributes = pd.read_sql(
+            f"SELECT source_id, subzone FROM {ATTRIBUTES_TABLE}", conn
+        )
 
     joined = scores.merge(attributes, on="source_id", how="inner")
     return joined[joined["subzone"].notna()].copy()
 
 
-def summarise(subzoned):
+def summarise(subzoned: pd.DataFrame) -> pd.DataFrame:
     # right=False so bin edges are left-inclusive ([5.0, 8.0), [8.0, inf))
     # matching the documented spec exactly ("Excellent: 8.0-10.0", "Good:
     # 5.0-7.9") — pandas' right=True default put scores of exactly 5.0 or
     # 8.0 in the lower tier, silently misclassifying every parcel that
     # scored precisely on a boundary.
     subzoned["suitability_level"] = pd.cut(
-        subzoned["suitability_score"], bins=LEVEL_BINS, labels=LEVEL_LABELS, right=False,
+        subzoned["suitability_score"],
+        bins=LEVEL_BINS, labels=LEVEL_LABELS, right=False,
     )
 
     level_pct = (
@@ -72,26 +82,35 @@ def summarise(subzoned):
     return summary.reset_index().sort_values("parcel_count", ascending=False)
 
 
-def print_summary(summary):
-    columns = ["subzone", "parcel_count", "mean_score", "Excellent_pct", "Good_pct", "Marginal_pct"]
-    headers = ["Subzone", "Parcels", "Mean score", "% Excellent", "% Good", "% Marginal"]
+def print_summary(summary: pd.DataFrame) -> None:
+    columns = [
+        "subzone", "parcel_count", "mean_score",
+        "Excellent_pct", "Good_pct", "Marginal_pct",
+    ]
+    headers = [
+        "Subzone", "Parcels", "Mean score",
+        "% Excellent", "% Good", "% Marginal",
+    ]
     widths = [12, 9, 12, 13, 9, 11]
 
-    def fmt_row(values):
+    def fmt_row(values: list) -> str:
         return "  ".join(str(v).ljust(w) for v, w in zip(values, widths))
 
-    print()
-    print(fmt_row(headers))
-    print("  ".join("-" * w for w in widths))
+    logger.info("")
+    logger.info(fmt_row(headers))
+    logger.info("  ".join("-" * w for w in widths))
     for _, row in summary.iterrows():
-        print(fmt_row([row[c] for c in columns]))
-    print()
+        logger.info(fmt_row([row[c] for c in columns]))
+    logger.info("")
 
 
-def main():
-    print(f"Loading {SCORES_TABLE} + {ATTRIBUTES_TABLE}.subzone from {DB_PATH}...")
+def main() -> None:
+    logger.info(
+        f"Loading {SCORES_TABLE} + {ATTRIBUTES_TABLE}.subzone from "
+        f"{DB_PATH}..."
+    )
     subzoned = load_scored_subzones(DB_PATH)
-    print(
+    logger.info(
         f"  {len(subzoned):,} scored parcels fall within one of the 5 "
         f"named subzones (subzone IS NOT NULL)"
     )
@@ -106,10 +125,15 @@ def main():
             f"ON {SUMMARY_TABLE}(subzone)"
         )
 
-    print(f"Saved {len(summary)} rows to table '{SUMMARY_TABLE}' in {DB_PATH}")
+    logger.info(
+        f"Saved {len(summary)} rows to table '{SUMMARY_TABLE}' in {DB_PATH}"
+    )
 
-    assert DB_PATH.exists(), f"Expected output db {DB_PATH} not found — check path"
+    assert DB_PATH.exists(), (
+        f"Expected output db {DB_PATH} not found — check path"
+    )
 
 
 if __name__ == "__main__":
+    configure_logging()
     main()

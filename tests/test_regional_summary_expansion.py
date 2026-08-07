@@ -21,7 +21,7 @@ import pandas as pd
 from regional_summary_expansion import compute_levels_summary
 
 
-def test_boundary_scores_are_left_inclusive():
+def test_boundary_scores_are_left_inclusive() -> None:
     scores = pd.DataFrame({"suitability_score": [5.0, 8.0]})
 
     summary = compute_levels_summary(scores)
@@ -32,8 +32,10 @@ def test_boundary_scores_are_left_inclusive():
     assert counts["Marginal"] == 0
 
 
-def test_scores_bin_into_expected_levels():
-    scores = pd.DataFrame({"suitability_score": [0.0, 4.99, 5.0, 7.99, 8.0, 10.0]})
+def test_scores_bin_into_expected_levels() -> None:
+    scores = pd.DataFrame({
+        "suitability_score": [0.0, 4.99, 5.0, 7.99, 8.0, 10.0],
+    })
 
     summary = compute_levels_summary(scores)
     counts = summary.set_index("suitability_level")["parcel_count"]

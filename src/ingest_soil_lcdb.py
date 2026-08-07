@@ -52,14 +52,25 @@ like Cape Runaway, Whanarua Bay) — the old box would have silently
 under-covered ~half of Opotiki's parcels.
 """
 
+import logging
 import os
+from pathlib import Path
+from typing import Iterable
 
 import geopandas
 import pandas as pd
 import requests
 from dotenv import load_dotenv
 
-from config import DATA_PROCESSED_DIR, DB_PATH, PARCELS_PATH, get_connection
+from config import (
+    DATA_PROCESSED_DIR,
+    DB_PATH,
+    PARCELS_PATH,
+    configure_logging,
+    get_connection,
+)
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -90,36 +101,49 @@ LCDB_COLUMN = "lcdb_class_2023"
 TABLE_NAME = "parcel_attributes"
 
 
-def load_parcel_centroids(path):
+def load_parcel_centroids(path: Path) -> geopandas.GeoDataFrame:
     parcels = geopandas.read_file(path)
     # Centroid computed in a projected CRS (NZTM2000) for accuracy, then
     # converted back to WGS84 to match the WFS layers' output CRS.
     centroids = parcels.to_crs(2193).geometry.centroid.to_crs(4326)
     return geopandas.GeoDataFrame(
-        {"source_id": parcels["source_id"], "parcel_id": parcels["parcel_id"]},
+        {
+            "source_id": parcels["source_id"],
+            "parcel_id": parcels["parcel_id"],
+        },
         geometry=centroids, crs=4326,
     )
 
 
-def flag_out_of_region(centroids, bbox_coords):
+def flag_out_of_region(
+    centroids: geopandas.GeoDataFrame,
+    bbox_coords: tuple[float, float, float, float],
+) -> geopandas.GeoDataFrame:
     min_lon, min_lat, max_lon, max_lat = bbox_coords
     x, y = centroids.geometry.x, centroids.geometry.y
     in_region = x.between(min_lon, max_lon) & y.between(min_lat, max_lat)
     outliers = centroids.loc[~in_region]
     if len(outliers):
-        print(
-            f"WARNING: {len(outliers)} parcel centroid(s) fall outside the "
+        logger.warning(
+            f"{len(outliers)} parcel centroid(s) fall outside the "
             f"documented Bay of Plenty extent {bbox_coords} — likely LINZ "
-            f"'Unit of Property' features bundling legally distinct parcels "
-            f"scattered across NZ under one feature. These will correctly "
-            f"come back unmatched on every soil/LCDB attribute below:"
+            f"'Unit of Property' features bundling legally distinct "
+            f"parcels scattered across NZ under one feature. These will "
+            f"correctly come back unmatched on every soil/LCDB attribute "
+            f"below:"
         )
         for _, row in outliers.iterrows():
-            print(f"  source_id={row['source_id']}  parcel_id={row['parcel_id']}  centroid=({row.geometry.x:.4f}, {row.geometry.y:.4f})")
+            logger.warning(
+                f"  source_id={row['source_id']}  "
+                f"parcel_id={row['parcel_id']}  "
+                f"centroid=({row.geometry.x:.4f}, {row.geometry.y:.4f})"
+            )
     return centroids
 
 
-def fetch_layer_gdf(base_url, layer_id, bbox, page_size=PAGE_SIZE):
+def fetch_layer_gdf(
+    base_url: str, layer_id: int, bbox: str, page_size: int = PAGE_SIZE
+) -> geopandas.GeoDataFrame:
     features = []
     start_index = 0
     while True:
@@ -139,7 +163,9 @@ def fetch_layer_gdf(base_url, layer_id, bbox, page_size=PAGE_SIZE):
             # reprojection so the output is truly EPSG:4326.
             "srsName": "urn:ogc:def:crs:EPSG::4326",
         }
-        response = requests.get(base_url, params=params, timeout=REQUEST_TIMEOUT)
+        response = requests.get(
+            base_url, params=params, timeout=REQUEST_TIMEOUT
+        )
         response.raise_for_status()
         page = response.json().get("features", [])
         features.extend(page)
@@ -151,7 +177,12 @@ def fetch_layer_gdf(base_url, layer_id, bbox, page_size=PAGE_SIZE):
     return geopandas.GeoDataFrame.from_features(features, crs=4326)
 
 
-def join_attribute(centroids, layer_gdf, source_field, output_column):
+def join_attribute(
+    centroids: geopandas.GeoDataFrame,
+    layer_gdf: geopandas.GeoDataFrame,
+    source_field: str,
+    output_column: str,
+) -> pd.Series:
     if source_field not in layer_gdf.columns:
         raise KeyError(
             f"Expected field {source_field!r} not found in layer columns: "
@@ -173,37 +204,44 @@ def join_attribute(centroids, layer_gdf, source_field, output_column):
     return joined.set_index("source_id")[output_column]
 
 
-def report_unmatched(result, columns):
+def report_unmatched(result: pd.DataFrame, columns: Iterable[str]) -> None:
     total = len(result)
-    print(f"\nUnmatched parcels per attribute (of {total:,} total):")
+    logger.warning(f"Unmatched parcels per attribute (of {total:,} total):")
     for col in columns:
         n_unmatched = result[col].isna().sum()
         pct = n_unmatched / total * 100
-        print(f"  {col}: {n_unmatched:,} unmatched ({pct:.1f}%)")
+        logger.warning(f"  {col}: {n_unmatched:,} unmatched ({pct:.1f}%)")
 
 
-def main():
-    print(f"Loading parcels from {PARCELS_PATH}...")
+def main() -> None:
+    logger.info(f"Loading parcels from {PARCELS_PATH}...")
     centroids = load_parcel_centroids(PARCELS_PATH)
-    print(f"  {len(centroids):,} parcel centroids computed")
+    logger.info(f"  {len(centroids):,} parcel centroids computed")
 
     centroids = flag_out_of_region(centroids, BOP_BBOX_COORDS)
 
     attributes = {}
 
     for layer_id, (field, column) in SMAP_LAYERS.items():
-        print(f"\nFetching S-map layer {layer_id} ({column})...")
+        logger.info(f"Fetching S-map layer {layer_id} ({column})...")
         layer_gdf = fetch_layer_gdf(LRIS_WFS_BASE, layer_id, BOP_BBOX)
-        print(f"  {len(layer_gdf):,} polygons fetched")
-        attributes[column] = join_attribute(centroids, layer_gdf, field, column)
+        logger.info(f"  {len(layer_gdf):,} polygons fetched")
+        attributes[column] = join_attribute(
+            centroids, layer_gdf, field, column
+        )
 
-    print(f"\nFetching LCDB layer {LCDB_LAYER_ID} ({LCDB_COLUMN})...")
+    logger.info(f"Fetching LCDB layer {LCDB_LAYER_ID} ({LCDB_COLUMN})...")
     lcdb_gdf = fetch_layer_gdf(LRIS_WFS_BASE, LCDB_LAYER_ID, BOP_BBOX)
-    print(f"  {len(lcdb_gdf):,} polygons fetched")
-    attributes[LCDB_COLUMN] = join_attribute(centroids, lcdb_gdf, LCDB_FIELD, LCDB_COLUMN)
+    logger.info(f"  {len(lcdb_gdf):,} polygons fetched")
+    attributes[LCDB_COLUMN] = join_attribute(
+        centroids, lcdb_gdf, LCDB_FIELD, LCDB_COLUMN
+    )
 
     result = pd.DataFrame(
-        {"source_id": centroids["source_id"], "parcel_id": centroids["parcel_id"]}
+        {
+            "source_id": centroids["source_id"],
+            "parcel_id": centroids["parcel_id"],
+        }
     ).set_index("source_id")
     for column, series in attributes.items():
         result[column] = series
@@ -219,10 +257,15 @@ def main():
             f"ON {TABLE_NAME}(source_id)"
         )
 
-    print(f"\nSaved {len(result):,} rows to table '{TABLE_NAME}' in {DB_PATH}")
+    logger.info(
+        f"Saved {len(result):,} rows to table '{TABLE_NAME}' in {DB_PATH}"
+    )
 
-    assert DB_PATH.exists(), f"Expected output db {DB_PATH} not found — check path"
+    assert DB_PATH.exists(), (
+        f"Expected output db {DB_PATH} not found — check path"
+    )
 
 
 if __name__ == "__main__":
+    configure_logging()
     main()

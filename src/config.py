@@ -16,12 +16,20 @@ instead; never redefine these locally.
 Also provides get_connection(), a thin context-manager wrapper around
 sqlite3.connect() so the ~15 call sites across the codebase share one
 place to change connection behaviour (e.g. adding row_factory) later.
+
+And configure_logging(), the shared `logging` setup per CLAUDE.md's
+"Logging, not print()" rule: INFO for progress, WARNING for retries
+and coverage gaps, ERROR for failures. Each pipeline script's
+`if __name__ == "__main__":` block calls this once before main().
 """
 
+import logging
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
+
+LOG_FORMAT = "%(asctime)s %(levelname)-8s %(name)s: %(message)s"
 
 PROJECT_ROOT: Path = Path(__file__).resolve().parent.parent
 
@@ -39,3 +47,8 @@ def get_connection(db_path: Path = DB_PATH) -> Iterator[sqlite3.Connection]:
     """Context-managed sqlite3 connection, defaulting to DB_PATH."""
     with sqlite3.connect(db_path) as conn:
         yield conn
+
+
+def configure_logging(level: int = logging.INFO) -> None:
+    """Shared logging setup for every pipeline script's entry point."""
+    logging.basicConfig(level=level, format=LOG_FORMAT)

@@ -13,7 +13,7 @@ One-off exploration script. NOT the ingestion pipeline.
 Queries LINZ layer 122657 (NZ Property Boundaries, filtered to the three
 territorial authorities) and the four confirmed S-map layers (filtered to a
 Bay of Plenty bounding box, since S-map has no territorial_authority field),
-then prints feature counts and average vertices-per-polygon.
+then reports feature counts and average vertices-per-polygon.
 
 Also tests area thresholds (5,000 / 10,000 / 20,000 / 40,000 m²) on the
 LINZ layer, within the same 3-TA filter, to gauge parcel counts remaining
@@ -38,12 +38,18 @@ below is also widened to Opotiki's real extent (east to 178.2°, south to
 -38.9°), which the original narrower box would have half-missed.
 """
 
+import logging
 import os
 import re
 from statistics import mean
+from typing import Any, Optional
 
 import requests
 from dotenv import load_dotenv
+
+from config import configure_logging
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -88,7 +94,10 @@ LCDB_LAYER_ID = 123148
 LCDB_GEOMETRY_FIELD = "GEOMETRY"  # confirmed via DescribeFeatureType
 
 
-def bbox_cql(field_name, coords=BOP_BBOX_COORDS):
+def bbox_cql(
+    field_name: str,
+    coords: tuple[float, float, float, float] = BOP_BBOX_COORDS,
+) -> str:
     # This WFS rejects requests that set both `bbox` and `cql_filter` (500:
     # "bbox and cql_filter both specified but are mutually exclusive"), so
     # any query that needs an attribute filter alongside the bbox has to
@@ -101,7 +110,14 @@ def bbox_cql(field_name, coords=BOP_BBOX_COORDS):
     )
 
 
-def wfs_get(base_url, layer_id, *, count=None, cql_filter=None, bbox=None):
+def wfs_get(
+    base_url: str,
+    layer_id: int,
+    *,
+    count: Optional[int] = None,
+    cql_filter: Optional[str] = None,
+    bbox: Optional[str] = None,
+) -> dict[str, Any]:
     params = {
         "service": "WFS",
         "version": "2.0.0",
@@ -121,7 +137,13 @@ def wfs_get(base_url, layer_id, *, count=None, cql_filter=None, bbox=None):
     return response.json()
 
 
-def wfs_hits(base_url, layer_id, *, cql_filter=None, bbox=None):
+def wfs_hits(
+    base_url: str,
+    layer_id: int,
+    *,
+    cql_filter: Optional[str] = None,
+    bbox: Optional[str] = None,
+) -> int:
     # resultType=hits ignores outputFormat=json on this WFS (Koordinates/
     # GeoServer) and always answers with an XML FeatureCollection whose
     # root element carries the total match count as numberMatched.
@@ -141,11 +163,14 @@ def wfs_hits(base_url, layer_id, *, cql_filter=None, bbox=None):
     response.raise_for_status()
     match = re.search(r'numberMatched="(\d+)"', response.text)
     if not match:
-        raise ValueError(f"numberMatched not found in hits response: {response.text[:300]}")
+        raise ValueError(
+            f"numberMatched not found in hits response: "
+            f"{response.text[:300]}"
+        )
     return int(match.group(1))
 
 
-def count_vertices(geometry):
+def count_vertices(geometry: Optional[dict[str, Any]]) -> int:
     if geometry is None:
         return 0
     gtype = geometry["type"]
@@ -157,8 +182,15 @@ def count_vertices(geometry):
     return 0
 
 
-def query_layer(base_url, layer_id, label, *, cql_filter=None, bbox=None):
-    print(f"Querying {label} (layer {layer_id})...")
+def query_layer(
+    base_url: str,
+    layer_id: int,
+    label: str,
+    *,
+    cql_filter: Optional[str] = None,
+    bbox: Optional[str] = None,
+) -> dict[str, Any]:
+    logger.info(f"Querying {label} (layer {layer_id})...")
 
     sample = wfs_get(
         base_url, layer_id,
@@ -186,65 +218,76 @@ def query_layer(base_url, layer_id, label, *, cql_filter=None, bbox=None):
     }
 
 
-def print_summary(rows):
+def print_summary(rows: list[dict[str, Any]]) -> None:
     headers = ("Layer", "ID", "Total features", "Sample", "Avg vertices/poly")
     widths = (32, 8, 16, 8, 20)
 
-    def fmt_row(values):
+    def fmt_row(values: tuple[Any, ...]) -> str:
         return "  ".join(str(v).ljust(w) for v, w in zip(values, widths))
 
-    print()
-    print(fmt_row(headers))
-    print("  ".join("-" * w for w in widths))
+    logger.info("")
+    logger.info(fmt_row(headers))
+    logger.info("  ".join("-" * w for w in widths))
     for row in rows:
-        print(fmt_row((
+        logger.info(fmt_row((
             row["layer"],
             row["layer_id"],
             row["total_features"],
             row["sample_size"],
             row["avg_vertices_per_polygon"],
         )))
-    print()
+    logger.info("")
 
 
-def query_area_thresholds(base_url, layer_id, base_cql_filter, thresholds):
+def query_area_thresholds(
+    base_url: str,
+    layer_id: int,
+    base_cql_filter: str,
+    thresholds: tuple[int, ...],
+) -> list[dict[str, int]]:
     rows = []
     for threshold in thresholds:
         cql_filter = f"({base_cql_filter}) AND area > {threshold}"
-        print(f"Querying area > {threshold:,} m2 ...")
+        logger.info(f"Querying area > {threshold:,} m2 ...")
         parcels = wfs_hits(base_url, layer_id, cql_filter=cql_filter)
         rows.append({"threshold_m2": threshold, "parcels": parcels})
     return rows
 
 
-def print_area_thresholds(rows, baseline):
+def print_area_thresholds(rows: list[dict[str, int]], baseline: int) -> None:
     headers = ("Area threshold", "Parcels remaining", "% of original")
     widths = (18, 20, 16)
 
-    def fmt_row(values):
+    def fmt_row(values: tuple[Any, ...]) -> str:
         return "  ".join(str(v).ljust(w) for v, w in zip(values, widths))
 
-    print()
-    print(f"Baseline (3-TA filter, no area cutoff): {baseline:,} parcels")
-    print()
-    print(fmt_row(headers))
-    print("  ".join("-" * w for w in widths))
+    logger.info("")
+    logger.info(
+        f"Baseline (3-TA filter, no area cutoff): {baseline:,} parcels"
+    )
+    logger.info("")
+    logger.info(fmt_row(headers))
+    logger.info("  ".join("-" * w for w in widths))
     for row in rows:
         pct = row["parcels"] / baseline * 100
-        print(fmt_row((
+        logger.info(fmt_row((
             f"> {row['threshold_m2']:,} m2",
             f"{row['parcels']:,}",
             f"{pct:.1f}%",
         )))
-    print()
+    logger.info("")
 
 
-def confirm_lcdb_orchard_field(base_url, layer_id, bbox_filter_cql):
+def confirm_lcdb_orchard_field(
+    base_url: str, layer_id: int, bbox_filter_cql: str
+) -> tuple[str, Any]:
     # LCDB field names carry a survey-year suffix that changes release to
     # release (Name_2023/Class_2023 here), and the exact class string/code
     # isn't documented anywhere we've read — both are confirmed live from
     # a real matching feature rather than assumed.
-    print("Confirming LCDB 2023/24 orchard field name and class value...")
+    logger.info(
+        "Confirming LCDB 2023/24 orchard field name and class value..."
+    )
     sample = wfs_get(
         base_url, layer_id, count=1,
         cql_filter=f"{bbox_filter_cql} AND Name_2023 LIKE '%Orchard%'",
@@ -252,21 +295,27 @@ def confirm_lcdb_orchard_field(base_url, layer_id, bbox_filter_cql):
     features = sample.get("features", [])
     if not features:
         raise RuntimeError(
-            "No LCDB feature matched Name_2023 LIKE '%Orchard%' in the bbox — "
-            "field name or class string may have changed, check schema manually."
+            "No LCDB feature matched Name_2023 LIKE '%Orchard%' in the "
+            "bbox — field name or class string may have changed, check "
+            "schema manually."
         )
     props = features[0]["properties"]
     name_value = props["Name_2023"]
     class_value = props["Class_2023"]
-    print(f"  Confirmed: Name_2023 = {name_value!r}, Class_2023 = {class_value}")
+    logger.info(
+        f"  Confirmed: Name_2023 = {name_value!r}, "
+        f"Class_2023 = {class_value}"
+    )
     return name_value, class_value
 
 
-def query_lcdb_orchard(base_url, layer_id):
+def query_lcdb_orchard(base_url: str, layer_id: int) -> dict[str, Any]:
     bbox_filter_cql = bbox_cql(LCDB_GEOMETRY_FIELD)
-    name_value, class_value = confirm_lcdb_orchard_field(base_url, layer_id, bbox_filter_cql)
+    name_value, class_value = confirm_lcdb_orchard_field(
+        base_url, layer_id, bbox_filter_cql
+    )
 
-    print(f"Querying LCDB (layer {layer_id}) totals in bbox...")
+    logger.info(f"Querying LCDB (layer {layer_id}) totals in bbox...")
     total = wfs_hits(base_url, layer_id, cql_filter=bbox_filter_cql)
 
     orchard_by_class = wfs_hits(
@@ -279,9 +328,10 @@ def query_lcdb_orchard(base_url, layer_id):
     )
     if orchard_by_class != orchard_by_name:
         raise RuntimeError(
-            f"Class_2023={class_value} count ({orchard_by_class}) disagrees with "
-            f"Name_2023={name_value!r} count ({orchard_by_name}) — "
-            "code/name mapping may not be 1:1, investigate before trusting either."
+            f"Class_2023={class_value} count ({orchard_by_class}) "
+            f"disagrees with Name_2023={name_value!r} count "
+            f"({orchard_by_name}) — code/name mapping may not be 1:1, "
+            f"investigate before trusting either."
         )
 
     return {
@@ -292,28 +342,34 @@ def query_lcdb_orchard(base_url, layer_id):
     }
 
 
-def print_lcdb_summary(result):
+def print_lcdb_summary(result: dict[str, Any]) -> None:
     pct = result["orchard_polygons"] / result["total_polygons"] * 100
-    print()
-    print(f"LCDB 2023/24 class checked: {result['class_name']!r} (Class_2023 = {result['class_code']})")
-    print()
-    headers = ("Total LCDB polygons (bbox)", "Orchard/Vineyard/Perennial", "% of total")
+    logger.info("")
+    logger.info(
+        f"LCDB 2023/24 class checked: {result['class_name']!r} "
+        f"(Class_2023 = {result['class_code']})"
+    )
+    logger.info("")
+    headers = (
+        "Total LCDB polygons (bbox)", "Orchard/Vineyard/Perennial",
+        "% of total",
+    )
     widths = (28, 28, 12)
 
-    def fmt_row(values):
+    def fmt_row(values: tuple[Any, ...]) -> str:
         return "  ".join(str(v).ljust(w) for v, w in zip(values, widths))
 
-    print(fmt_row(headers))
-    print("  ".join("-" * w for w in widths))
-    print(fmt_row((
+    logger.info(fmt_row(headers))
+    logger.info("  ".join("-" * w for w in widths))
+    logger.info(fmt_row((
         f"{result['total_polygons']:,}",
         f"{result['orchard_polygons']:,}",
         f"{pct:.1f}%",
     )))
-    print()
+    logger.info("")
 
 
-def main():
+def main() -> None:
     results = []
 
     linz_result = query_layer(
@@ -340,4 +396,5 @@ def main():
 
 
 if __name__ == "__main__":
+    configure_logging()
     main()
