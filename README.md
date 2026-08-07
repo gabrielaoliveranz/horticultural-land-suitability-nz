@@ -1,5 +1,7 @@
 # Terroir
 
+[![Tests](https://github.com/gabrielaoliveranz/horticultural-land-suitability-nz/actions/workflows/tests.yml/badge.svg)](https://github.com/gabrielaoliveranz/horticultural-land-suitability-nz/actions/workflows/tests.yml)
+
 Geospatial land-suitability analysis for Bay of Plenty horticulture — the sister project to [Apophenia](https://apophenia-nz.vercel.app) (Gabriela Olivera's kiwifruit export risk simulator).
 
 ## Overview
@@ -21,6 +23,7 @@ horticultural-land-suitability-nz/
 ├── README.md
 ├── PRODUCT.md                   # design/product decisions (Impeccable skill)
 ├── CLAUDE.md                    # project-specific working conventions
+├── .github/workflows/tests.yml   # CI: pytest on every push/PR
 ├── requirements.txt              # Python dependencies (pinned)
 ├── requirements-dev.txt          # + dev-only tools (colorspacious, pytest)
 ├── package.json                  # Playwright (dashboard testing), devDependency only
@@ -130,7 +133,10 @@ suitability-level binning in `src/regional_summary_expansion.py`,
 including a regression test for the `pandas.cut` boundary bug described
 in `docs/methodology.md`, "Score distribution and suitability levels".
 All tests use small in-memory DataFrame fixtures — none of them read
-`terroir.db`, so they pass on a clean clone with no data present.
+`terroir.db`, so they pass on a clean clone with no data present. Runs
+automatically on every push and pull request via
+`.github/workflows/tests.yml` (see the badge above) — the same
+clean-clone, no-data guarantee is what makes that safe to run in CI.
 
 ## Data sources
 
