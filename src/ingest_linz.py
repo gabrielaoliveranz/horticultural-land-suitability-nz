@@ -64,13 +64,13 @@ which would go stale here without a corresponding pipeline re-run).
 """
 
 import os
-from pathlib import Path
 
 import geopandas
 import shapely
 from dotenv import load_dotenv
 
 from api_retry import get_with_retry
+from config import DATA_PROCESSED_DIR, PARCELS_PATH
 
 load_dotenv()
 
@@ -107,10 +107,6 @@ EXPECTED_ROW_COUNT_APPROX = 14_265
 # docstring's "Geometry simplification" note for the derivation.
 SIMPLIFY_TOLERANCE_DEG = 0.00005   # ~5m max deviation at this latitude
 PRECISION_GRID_DEG = 1e-6          # 6 decimal places, ~11cm
-
-OUTPUT_DIR = Path(__file__).resolve().parent.parent / "data" / "processed"
-OUTPUT_PATH = OUTPUT_DIR / "parcels_linz.geojson"
-
 
 def fetch_all_features(base_url, layer_id, cql_filter, page_size=PAGE_SIZE):
     features = []
@@ -157,17 +153,19 @@ def main():
         lambda g: shapely.set_precision(g, grid_size=PRECISION_GRID_DEG)
     )
 
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    gdf.to_file(OUTPUT_PATH, driver="GeoJSON")
+    DATA_PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+    gdf.to_file(PARCELS_PATH, driver="GeoJSON")
 
-    print(f"\nSaved {len(gdf)} parcels (pre-simplified) to {OUTPUT_PATH}")
+    print(f"\nSaved {len(gdf)} parcels (pre-simplified) to {PARCELS_PATH}")
     print(
         f"Prior runs reported approx. {EXPECTED_ROW_COUNT_APPROX:,} parcels — "
         f"that figure only covered 2 of 3 TAs due to the macron bug fixed "
         f"above, so a materially higher count here is correct, not a bug."
     )
 
-    assert OUTPUT_DIR.exists(), f"Expected output dir {OUTPUT_DIR} not found — check path"
+    assert DATA_PROCESSED_DIR.exists(), (
+        f"Expected output dir {DATA_PROCESSED_DIR} not found — check path"
+    )
 
 
 if __name__ == "__main__":

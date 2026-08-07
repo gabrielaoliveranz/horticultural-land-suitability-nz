@@ -53,13 +53,13 @@ under-covered ~half of Opotiki's parcels.
 """
 
 import os
-import sqlite3
-from pathlib import Path
 
 import geopandas
 import pandas as pd
 import requests
 from dotenv import load_dotenv
+
+from config import DATA_PROCESSED_DIR, DB_PATH, PARCELS_PATH, get_connection
 
 load_dotenv()
 
@@ -87,10 +87,6 @@ LCDB_LAYER_ID = 123148
 LCDB_FIELD = "Name_2023"
 LCDB_COLUMN = "lcdb_class_2023"
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-INPUT_PATH = PROJECT_ROOT / "data" / "processed" / "parcels_linz.geojson"
-OUTPUT_DIR = PROJECT_ROOT / "data" / "processed"
-OUTPUT_DB = OUTPUT_DIR / "terroir.db"
 TABLE_NAME = "parcel_attributes"
 
 
@@ -187,8 +183,8 @@ def report_unmatched(result, columns):
 
 
 def main():
-    print(f"Loading parcels from {INPUT_PATH}...")
-    centroids = load_parcel_centroids(INPUT_PATH)
+    print(f"Loading parcels from {PARCELS_PATH}...")
+    centroids = load_parcel_centroids(PARCELS_PATH)
     print(f"  {len(centroids):,} parcel centroids computed")
 
     centroids = flag_out_of_region(centroids, BOP_BBOX_COORDS)
@@ -215,17 +211,17 @@ def main():
 
     report_unmatched(result, attributes.keys())
 
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    with sqlite3.connect(OUTPUT_DB) as conn:
+    DATA_PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+    with get_connection(DB_PATH) as conn:
         result.to_sql(TABLE_NAME, conn, if_exists="replace", index=False)
         conn.execute(
             f"CREATE UNIQUE INDEX IF NOT EXISTS idx_{TABLE_NAME}_source_id "
             f"ON {TABLE_NAME}(source_id)"
         )
 
-    print(f"\nSaved {len(result):,} rows to table '{TABLE_NAME}' in {OUTPUT_DB}")
+    print(f"\nSaved {len(result):,} rows to table '{TABLE_NAME}' in {DB_PATH}")
 
-    assert OUTPUT_DB.exists(), f"Expected output db {OUTPUT_DB} not found — check path"
+    assert DB_PATH.exists(), f"Expected output db {DB_PATH} not found — check path"
 
 
 if __name__ == "__main__":

@@ -32,10 +32,9 @@ than silently defaulting to 0, which would understate that parcel's
 score without any visible trace.
 """
 
-import sqlite3
-from pathlib import Path
-
 import pandas as pd
+
+from config import DB_PATH, get_connection
 
 SOIL_ORDER_POINTS = {
     "Allophanic": 10,
@@ -84,14 +83,12 @@ POINT_TABLES = {
     "soil_depth": SOIL_DEPTH_POINTS,
 }
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DB_PATH = PROJECT_ROOT / "data" / "processed" / "terroir.db"
 SOURCE_TABLE = "parcel_attributes"
 SCORE_TABLE = "parcel_scores"
 
 
 def load_parcel_attributes(db_path, table_name):
-    with sqlite3.connect(db_path) as conn:
+    with get_connection(db_path) as conn:
         return pd.read_sql(f"SELECT * FROM {table_name}", conn)
 
 
@@ -172,7 +169,7 @@ def main():
     ]
     result = scored[result_columns]
 
-    with sqlite3.connect(DB_PATH) as conn:
+    with get_connection(DB_PATH) as conn:
         result.to_sql(SCORE_TABLE, conn, if_exists="replace", index=False)
         conn.execute(
             f"CREATE UNIQUE INDEX IF NOT EXISTS idx_{SCORE_TABLE}_source_id "

@@ -134,7 +134,6 @@ both pages' numbers side by side.
 """
 
 import colorsys
-import sqlite3
 import sys
 from pathlib import Path
 
@@ -144,13 +143,12 @@ import pandas as pd
 import pydeck
 import streamlit as st
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT / "dashboard"))
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
 import theme  # noqa: E402
 from components import accent_divider, callout, card_css, footer, label_chart, metric_row, set_aria_label, sr_only  # noqa: E402
-
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-PARCELS_PATH = PROJECT_ROOT / "data" / "processed" / "parcels_linz.geojson"
-DB_PATH = PROJECT_ROOT / "data" / "processed" / "terroir.db"
+from config import DB_PATH, PARCELS_PATH, get_connection  # noqa: E402
 
 # Display-layer fix — see module docstring's "Urban exclusion" note.
 EXCLUDED_LCDB_CLASSES = {"Built-up Area (settlement)", "Urban Parkland/Open Space"}
@@ -188,7 +186,7 @@ LCDB_COLORS = build_lcdb_color_palette(LCDB_CLASSES)
 
 @st.cache_data
 def load_candidate_data():
-    with sqlite3.connect(DB_PATH) as conn:
+    with get_connection(DB_PATH) as conn:
         candidates = pd.read_sql("SELECT * FROM expansion_candidates", conn)
     candidates = candidates[~candidates["lcdb_class_2023"].isin(EXCLUDED_LCDB_CLASSES)]
 

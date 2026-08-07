@@ -38,13 +38,10 @@ geometry is duplicated into this table.
 Both parts save into data/processed/terroir.db and print their summary.
 """
 
-import sqlite3
-from pathlib import Path
-
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DB_PATH = PROJECT_ROOT / "data" / "processed" / "terroir.db"
+from config import DB_PATH, get_connection
+
 SCORES_TABLE = "parcel_scores"
 ATTRIBUTES_TABLE = "parcel_attributes"
 LEVELS_SUMMARY_TABLE = "suitability_levels_summary"
@@ -61,12 +58,12 @@ OUTSIDE_SUBZONES_LABEL = "Outside the 5 named subzones"
 
 
 def load_scores(db_path):
-    with sqlite3.connect(db_path) as conn:
+    with get_connection(db_path) as conn:
         return pd.read_sql(f"SELECT source_id, suitability_score FROM {SCORES_TABLE}", conn)
 
 
 def load_attributes(db_path):
-    with sqlite3.connect(db_path) as conn:
+    with get_connection(db_path) as conn:
         return pd.read_sql(
             f"SELECT source_id, lcdb_class_2023, subzone FROM {ATTRIBUTES_TABLE}", conn,
         )
@@ -134,7 +131,7 @@ def print_expansion_summary(candidates):
 
 
 def save_table(db_path, table_name, df, key_column):
-    with sqlite3.connect(db_path) as conn:
+    with get_connection(db_path) as conn:
         df.to_sql(table_name, conn, if_exists="replace", index=False)
         conn.execute(
             f"CREATE INDEX IF NOT EXISTS idx_{table_name}_{key_column} "

@@ -54,7 +54,6 @@ directly on before) gives it presence as a distinct "insight" block,
 using the existing card token rather than a new one-off treatment.
 """
 
-import sqlite3
 import sys
 from pathlib import Path
 
@@ -62,16 +61,17 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT / "dashboard"))
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
 import theme  # noqa: E402
 from components import accent_divider, card_css, footer, section_header, set_aria_label  # noqa: E402
-
-DB_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "processed" / "terroir.db"
+from config import DB_PATH, get_connection  # noqa: E402
 
 
 @st.cache_data
 def load_climate_data():
-    with sqlite3.connect(DB_PATH) as conn:
+    with get_connection(DB_PATH) as conn:
         return pd.read_sql("SELECT * FROM subzone_climate_risk", conn)
 
 

@@ -21,13 +21,10 @@ Saves the result as a new table `subzone_summary` in
 data/processed/terroir.db and prints it as a table.
 """
 
-import sqlite3
-from pathlib import Path
-
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DB_PATH = PROJECT_ROOT / "data" / "processed" / "terroir.db"
+from config import DB_PATH, get_connection
+
 SCORES_TABLE = "parcel_scores"
 ATTRIBUTES_TABLE = "parcel_attributes"
 SUMMARY_TABLE = "subzone_summary"
@@ -38,7 +35,7 @@ LEVEL_LABELS = ["Marginal", "Good", "Excellent"]
 
 
 def load_scored_subzones(db_path):
-    with sqlite3.connect(db_path) as conn:
+    with get_connection(db_path) as conn:
         scores = pd.read_sql(f"SELECT source_id, suitability_score FROM {SCORES_TABLE}", conn)
         attributes = pd.read_sql(f"SELECT source_id, subzone FROM {ATTRIBUTES_TABLE}", conn)
 
@@ -102,7 +99,7 @@ def main():
     summary = summarise(subzoned)
     print_summary(summary)
 
-    with sqlite3.connect(DB_PATH) as conn:
+    with get_connection(DB_PATH) as conn:
         summary.to_sql(SUMMARY_TABLE, conn, if_exists="replace", index=False)
         conn.execute(
             f"CREATE UNIQUE INDEX IF NOT EXISTS idx_{SUMMARY_TABLE}_subzone "

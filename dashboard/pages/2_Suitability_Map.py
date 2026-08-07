@@ -152,7 +152,6 @@ of the confirmed palette either, same reasoning as the warning-box
 restyle on 4_Apophenia_Comparison.py.
 """
 
-import sqlite3
 import sys
 from pathlib import Path
 
@@ -161,13 +160,12 @@ import pandas as pd
 import pydeck
 import streamlit as st
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT / "dashboard"))
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
 import theme  # noqa: E402
 from components import accent_divider, callout, card_css, footer, label_chart, sr_only  # noqa: E402
-
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-PARCELS_PATH = PROJECT_ROOT / "data" / "processed" / "parcels_linz.geojson"
-DB_PATH = PROJECT_ROOT / "data" / "processed" / "terroir.db"
+from config import DB_PATH, PARCELS_PATH, get_connection  # noqa: E402
 
 # Same bins/right=False as subzone_summary.py and
 # regional_summary_expansion.py — see docs/methodology.md, "Score
@@ -216,7 +214,7 @@ def load_map_data():
     # ~30MB file, already at map-ready precision, just read and joined.
     parcels = geopandas.read_file(PARCELS_PATH, columns=["source_id", "parcel_id", "geometry"])
 
-    with sqlite3.connect(DB_PATH) as conn:
+    with get_connection(DB_PATH) as conn:
         # parcel_scores already carries subzone (copied at scoring time
         # in calculate_score.py) — no join needed.
         scores = pd.read_sql("SELECT source_id, suitability_score, subzone FROM parcel_scores", conn)

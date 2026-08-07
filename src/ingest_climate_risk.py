@@ -31,17 +31,12 @@ Saves the result as `subzone_climate_risk` in data/processed/terroir.db
 and prints the summary table.
 """
 
-import sqlite3
-from pathlib import Path
-
 import geopandas
 import pandas as pd
 
 from api_retry import get_with_retry
+from config import DB_PATH, PARCELS_PATH, get_connection
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-PARCELS_PATH = PROJECT_ROOT / "data" / "processed" / "parcels_linz.geojson"
-DB_PATH = PROJECT_ROOT / "data" / "processed" / "terroir.db"
 ATTRIBUTES_TABLE = "parcel_attributes"
 CLIMATE_TABLE = "subzone_climate_risk"
 
@@ -60,7 +55,7 @@ HEAVY_RAIN_THRESHOLD_MM = 25.0
 
 def load_subzone_points(parcels_path, db_path):
     parcels = geopandas.read_file(parcels_path)
-    with sqlite3.connect(db_path) as conn:
+    with get_connection(db_path) as conn:
         attributes = pd.read_sql(
             f"SELECT source_id, subzone FROM {ATTRIBUTES_TABLE} WHERE subzone IS NOT NULL",
             conn,
@@ -174,7 +169,7 @@ def main():
     print_summary(results)
 
     result_df = pd.DataFrame(results)
-    with sqlite3.connect(DB_PATH) as conn:
+    with get_connection(DB_PATH) as conn:
         result_df.to_sql(CLIMATE_TABLE, conn, if_exists="replace", index=False)
         conn.execute(
             f"CREATE UNIQUE INDEX IF NOT EXISTS idx_{CLIMATE_TABLE}_subzone "

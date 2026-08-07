@@ -48,13 +48,13 @@ the Ōpōtiki locality/suburb polygons this script depends on.
 """
 
 import os
-import sqlite3
-from pathlib import Path
 
 import geopandas
 import numpy as np
 import requests
 from dotenv import load_dotenv
+
+from config import DB_PATH, PARCELS_PATH, get_connection
 
 load_dotenv()
 
@@ -76,9 +76,6 @@ TAURANGA_MAJOR_NAME = "Tauranga"
 # see module docstring's naming note.
 TARGET_LOCALITIES = ("Katikati", "Te Puke", "Pongakawa", "Opotiki")
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-PARCELS_PATH = PROJECT_ROOT / "data" / "processed" / "parcels_linz.geojson"
-OUTPUT_DB = PROJECT_ROOT / "data" / "processed" / "terroir.db"
 TABLE_NAME = "parcel_attributes"
 
 
@@ -150,7 +147,7 @@ def report_subzones(result):
 
 
 def update_subzone_column(db_path, table_name, result):
-    with sqlite3.connect(db_path) as conn:
+    with get_connection(db_path) as conn:
         existing_cols = [row[1] for row in conn.execute(f"PRAGMA table_info({table_name})")]
         if "subzone" not in existing_cols:
             conn.execute(f"ALTER TABLE {table_name} ADD COLUMN subzone TEXT")
@@ -195,10 +192,10 @@ def main():
 
     report_subzones(result)
 
-    update_subzone_column(OUTPUT_DB, TABLE_NAME, result)
-    print(f"\nUpdated 'subzone' column on table '{TABLE_NAME}' in {OUTPUT_DB}")
+    update_subzone_column(DB_PATH, TABLE_NAME, result)
+    print(f"\nUpdated 'subzone' column on table '{TABLE_NAME}' in {DB_PATH}")
 
-    assert OUTPUT_DB.exists(), f"Expected output db {OUTPUT_DB} not found — check path"
+    assert DB_PATH.exists(), f"Expected output db {DB_PATH} not found — check path"
 
 
 if __name__ == "__main__":

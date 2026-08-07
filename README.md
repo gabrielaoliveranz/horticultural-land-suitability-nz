@@ -34,6 +34,7 @@ horticultural-land-suitability-nz/
 │   ├── ingest_linz.py, ingest_soil_lcdb.py, ingest_subzones.py, calculate_score.py,
 │   │   subzone_summary.py, cross_project_comparison.py, ingest_climate_risk.py,
 │   │   regional_summary_expansion.py
+│   ├── config.py, api_retry.py   # shared utilities, imported not run
 │   └── README.md
 │
 ├── dashboard/                    # Streamlit app

@@ -28,14 +28,10 @@ Saves the joined comparison table as `cross_project_comparison` in
 terroir.db and prints the table plus the correlation values.
 """
 
-import sqlite3
-from pathlib import Path
-
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DB_PATH = PROJECT_ROOT / "data" / "processed" / "terroir.db"
-CORRIDOR_CSV_PATH = PROJECT_ROOT / "data" / "external" / "dim_corridor_apophenia.csv"
+from config import CORRIDOR_CSV_PATH, DB_PATH, get_connection
+
 SUMMARY_TABLE = "subzone_summary"
 COMPARISON_TABLE = "cross_project_comparison"
 
@@ -43,7 +39,7 @@ RISK_INDICATORS = ("distance_port_km", "base_risk_weight", "psa_incidence_histor
 
 
 def load_terroir_summary(db_path):
-    with sqlite3.connect(db_path) as conn:
+    with get_connection(db_path) as conn:
         return pd.read_sql(f"SELECT subzone, mean_score FROM {SUMMARY_TABLE}", conn)
 
 
@@ -110,7 +106,7 @@ def main():
     correlations = compute_correlations(comparison)
     print_correlations(correlations)
 
-    with sqlite3.connect(DB_PATH) as conn:
+    with get_connection(DB_PATH) as conn:
         comparison.to_sql(COMPARISON_TABLE, conn, if_exists="replace", index=False)
         conn.execute(
             f"CREATE UNIQUE INDEX IF NOT EXISTS idx_{COMPARISON_TABLE}_subzone "

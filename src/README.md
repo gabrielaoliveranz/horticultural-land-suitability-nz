@@ -76,9 +76,17 @@ canonical run order** — run top to bottom:
   as `subzone_summary.py`. See `docs/methodology.md` ("Regional
   summary and expansion candidates (business questions 1 and 2)").
 
-Plus one shared utility, not part of the numbered pipeline order above
-since it's imported by other scripts rather than run on its own:
+Plus two shared utilities, not part of the numbered pipeline order
+above since they're imported by other scripts rather than run on
+their own:
 
+- `config.py` — the single source of truth for `PROJECT_ROOT`,
+  `DB_PATH`, `PARCELS_PATH`, and `CORRIDOR_CSV_PATH`, plus
+  `get_connection()`, a thin context-managed wrapper around
+  `sqlite3.connect()`. Every other script and every dashboard page
+  that touches `data/processed/` or `data/external/` imports these
+  rather than redefining them locally — see CLAUDE.md, "Paths and
+  configuration have one home".
 - `api_retry.py` — `get_with_retry()`, a bounded exponential-backoff
   wrapper around `requests.get()` used by `ingest_linz.py` and
   `ingest_climate_risk.py`. Retries connection errors, timeouts, HTTP
