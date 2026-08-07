@@ -67,9 +67,10 @@ import os
 from pathlib import Path
 
 import geopandas
-import requests
 import shapely
 from dotenv import load_dotenv
+
+from api_retry import get_with_retry
 
 load_dotenv()
 
@@ -129,8 +130,7 @@ def fetch_all_features(base_url, layer_id, cql_filter, page_size=PAGE_SIZE):
             # EPSG:4326, matching the crs we label the GeoDataFrame with.
             "srsName": "urn:ogc:def:crs:EPSG::4326",
         }
-        response = requests.get(base_url, params=params, timeout=REQUEST_TIMEOUT)
-        response.raise_for_status()
+        response = get_with_retry(base_url, params=params, timeout=REQUEST_TIMEOUT)
         page_features = response.json().get("features", [])
         features.extend(page_features)
         print(f"  fetched {len(features)} features so far...")

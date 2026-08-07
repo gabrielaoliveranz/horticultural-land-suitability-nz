@@ -76,6 +76,15 @@ canonical run order** — run top to bottom:
   as `subzone_summary.py`. See `docs/methodology.md` ("Regional
   summary and expansion candidates (business questions 1 and 2)").
 
+Plus one shared utility, not part of the numbered pipeline order above
+since it's imported by other scripts rather than run on its own:
+
+- `api_retry.py` — `get_with_retry()`, a bounded exponential-backoff
+  wrapper around `requests.get()` used by `ingest_linz.py` and
+  `ingest_climate_risk.py`. Retries connection errors, timeouts, HTTP
+  429, and HTTP 5xx; fails immediately on any other 4xx. See
+  `docs/methodology.md`, "Retry policy for API ingestion".
+
 All ingestion, joining, scoring, regional-summary/expansion, and
 cross-project comparison work (Fase 2-4) is in place. Fase 5 (Streamlit
 dashboard) is built — 6 pages, see `dashboard/README.md`. Fase 6 (case

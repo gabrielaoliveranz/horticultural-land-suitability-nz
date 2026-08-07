@@ -460,6 +460,48 @@ pre-change backup:
     1,188→1,187 (Excellent unchanged at 16,414) — all percentages
     unchanged at 1 decimal place.
 
+---
+
+## Retry policy for API ingestion
+
+**Decision:** `ingest_linz.py` and `ingest_climate_risk.py` retry
+transient `requests.get()` failures with bounded exponential backoff
+(shared helper: `src/api_retry.py`, `get_with_retry()`) instead of
+failing the whole pipeline run on the first bad response. A 4xx
+response other than 429 is never retried.
+
+**Reasoning:** both scripts previously called `requests.get()` with a
+timeout and `raise_for_status()` but no retry, so a single transient
+network blip or a rate-limit response killed a full pipeline run —
+`ingest_linz.py` alone pages through the LINZ WFS with an unbounded
+number of `GetFeature` requests (22,834 parcels at `PAGE_SIZE = 1000`),
+so the more requests a run makes, the more surface area there is for
+one of them to hit a transient failure.
+
+**What's retried:** connection errors, timeouts, HTTP 429, and any HTTP
+5xx — all failures where retrying is the correct response because
+nothing about the request itself was wrong.
+
+**What's not retried, and fails immediately:** any other 4xx (401/403
+bad or missing API key, 400 malformed CQL filter, etc.). These are
+client-side mistakes retrying can't fix — silently retrying them would
+burn through the retry budget and delay a failure that should surface
+immediately, and could mask a bad `.env` key behind a few seconds of
+pointless backoff.
+
+**Bounds:** `max_retries=4` with `backoff_base_seconds=1.0` — delays of
+1s, 2s, 4s, 8s (15s total worst case per request) before giving up and
+raising. Chosen to absorb a brief rate-limit window or network blip
+without turning a genuinely broken API/key into a run that hangs for
+minutes. A 429's `Retry-After` header is honoured when present (LINZ
+and Open-Meteo don't currently send one, but the check costs nothing
+and is correct behaviour if either starts to).
+
+**Kept dependency-light:** implemented with stdlib `time` and the
+`requests` exceptions already in use — no new third-party retry
+library (e.g. `tenacity`), consistent with `requirements.txt` only
+listing packages actually imported.
+
 All of this is now corrected everywhere it was previously cited
 (`docs/methodology.md`, `dashboard/README.md`, `data/processed/README.md`,
 `src/README.md`, and the `3_Expansion_Candidates.py` /

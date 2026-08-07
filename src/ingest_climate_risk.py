@@ -36,7 +36,8 @@ from pathlib import Path
 
 import geopandas
 import pandas as pd
-import requests
+
+from api_retry import get_with_retry
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PARCELS_PATH = PROJECT_ROOT / "data" / "processed" / "parcels_linz.geojson"
@@ -93,8 +94,7 @@ def fetch_hourly_weather(lat, lon):
         "hourly": "temperature_2m,precipitation",
         "timezone": TIMEZONE,
     }
-    response = requests.get(OPEN_METEO_ARCHIVE_URL, params=params, timeout=REQUEST_TIMEOUT)
-    response.raise_for_status()
+    response = get_with_retry(OPEN_METEO_ARCHIVE_URL, params=params, timeout=REQUEST_TIMEOUT)
     hourly = response.json()["hourly"]
 
     df = pd.DataFrame({
