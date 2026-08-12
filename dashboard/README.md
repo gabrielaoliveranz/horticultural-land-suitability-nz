@@ -160,7 +160,7 @@ confirmed by testing a bare import first, which failed):
   accent-coloured mark to the left.
 - **`footer()`** — three columns (Analysis: `st.page_link` to all 6
   pages; Data Sources: real LINZ/S-map/LCDB/Open-Meteo URLs; Project:
-  Apophenia/GitHub/LinkedIn with icons), a disabled case-study CTA, and
+  Apophenia/GitHub/LinkedIn with icons), a live case-study CTA, and
   a copyright line — carried by spacing, a subtle divider, and
   typography, **not** a coloured background. A full-bleed solid-green
   version shipped previously; removed after feedback that it read as

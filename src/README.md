@@ -96,4 +96,4 @@ their own:
 All ingestion, joining, scoring, regional-summary/expansion, and
 cross-project comparison work (Fase 2-4) is in place. Fase 5 (Streamlit
 dashboard) is built — 6 pages, see `dashboard/README.md`. Fase 6 (case
-study write-up) is the remaining stage — see `case_study/README.md`.
+study write-up) is built and live too — see `case_study/README.md`.

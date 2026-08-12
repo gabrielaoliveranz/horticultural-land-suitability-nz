@@ -170,7 +170,8 @@ https://open-meteo.com/en/licence.
 
 - [x] Confirm exact LINZ layer(s) needed for Bay of Plenty subzone boundaries
       — layer 122657 (NZ Property Boundaries), filtered via CQL_FILTER on
-      `territorial_authority`
+      `territorial_authority_ascii` (not the plain `territorial_authority`
+      field — see "Technical note (macrons)" above for why)
 - [x] Confirm which S-map soil attributes are available via API vs. requiring
       manual download from S-map Online / LRIS Portal — depth, texture,
       drainage, and classification confirmed via LRIS WFS; PAW is restricted,

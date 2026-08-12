@@ -443,7 +443,7 @@ def back_to_top():
 def footer():
     """Site footer: three columns (Analysis: links to all 6 pages;
     Data Sources: real external URLs, see DATA_SOURCES; Project:
-    Apophenia/GitHub/LinkedIn with icons), a disabled case-study CTA,
+    Apophenia/GitHub/LinkedIn with icons), a live case-study CTA,
     and a copyright line — carried by spacing, a subtle top divider,
     and typography, not a coloured background block.
 
