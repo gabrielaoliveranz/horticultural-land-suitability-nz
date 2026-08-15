@@ -145,7 +145,7 @@ clean-clone, no-data guarantee is what makes that safe to run in CI.
 |---|---|---|---|
 | **LINZ** — NZ Property Boundaries (layer 122657) | WFS 2.0.0 vector API | Cadastral parcel boundaries, the base unit of analysis | CC-BY 3.0 New Zealand |
 | **S-map** — Soil Depth/Texture/Drainage/Classification (4 layers) | WFS 2.0.0 vector API, via LRIS Portal | Soil suitability attributes (soil_order, soil_texture, soil_drainage, soil_depth) | Open licence for these 4 layers. Water-holding-capacity (PAW) data is restricted (Base Property Data), not used — see Known Limitations. |
-| **LCDB** — Land Cover Database v6.0 (layer 123148) | WFS 2.0.0 vector API, via LRIS Portal | Current land-cover classification (identifies existing orchard/vineyard use) | Not separately stated in `docs/data_sources.md` — accessed via the same LRIS Portal/WFS as S-map, but its own licence terms aren't confirmed there independently of the 4 S-map layers. |
+| **LCDB** — Land Cover Database v6.0 (layer 123148) | WFS 2.0.0 vector API, via LRIS Portal | Current land-cover classification (identifies existing orchard/vineyard use) | CC BY 4.0 — verified independently against the layer's own API metadata, not assumed to match S-map (see `docs/data_sources.md`). |
 | **Open-Meteo** — Historical Weather API (ERA5/ERA5-Land reanalysis) | REST/JSON, no API key or account required | Climate risk: frost days, chill hours, heavy-rain days per subzone | Data: CC BY 4.0 (permits commercial use). Free API tier used here is non-commercial-only per Open-Meteo's terms of service — a separate condition from the data licence, see `docs/data_sources.md`. |
 
 ## Data and licensing
@@ -164,8 +164,9 @@ rights it doesn't hold over data that isn't its own:
   Landcare Research, via the LRIS Portal. Open licence for the 4 layers
   used here; the restricted Base Property Data (PAW) layer is not used.
 - **LCDB** (land cover) — Manaaki Whenua – Landcare Research, via the
-  same LRIS Portal/WFS as S-map. Its licence terms aren't confirmed
-  independently of the 4 S-map layers' terms — see `docs/data_sources.md`.
+  same LRIS Portal/WFS as S-map. CC BY 4.0 — confirmed independently
+  against the layer's own API metadata, not assumed to match S-map's
+  terms — see `docs/data_sources.md`.
 - **Open-Meteo** (climate) — data under CC BY 4.0 (permits commercial
   use, with attribution); the free API tier this project uses is
   restricted to non-commercial use under Open-Meteo's own terms of

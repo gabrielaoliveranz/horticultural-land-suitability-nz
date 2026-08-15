@@ -112,6 +112,18 @@ condition (see note above).
 **Status:** CONFIRMED. WFS access, API key, and all four soil attribute
 layers tested and working.
 
+**LCDB (layer 123148), fetched by the same script:** `ingest_soil_lcdb.py`
+also pulls LCDB v6.0 (Land Cover Database, mainland New Zealand) from this
+same LRIS Portal/WFS — it's a separate dataset from the four S-map layers
+above, not another S-map layer, and its licence was left unconfirmed for a
+while on the assumption it matched S-map's. **Verified 2026-08-15,
+independently, against the layer's own API metadata** (not assumed):
+`https://lris.scinfo.org.nz/services/api/v1/layers/123148/` →
+`license.title` = "Creative Commons Attribution 4.0 International",
+`license.type` = "cc-by", `license.version` = "4.0" — CC BY 4.0, same
+licence family as S-map's open layers but its own confirmed grant, not a
+borrowed one. See `docs/attributions.md` for the full citation.
+
 **Technical note (LRIS WFS):** `bbox` and `CQL_FILTER` cannot be used
 together in the same request (returns a 500 "mutually exclusive" error).
 When both a spatial extent and an attribute filter are needed, fold the

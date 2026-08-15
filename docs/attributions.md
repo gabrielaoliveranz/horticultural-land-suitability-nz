@@ -24,6 +24,8 @@ Format:
 
 - Historical Weather API by Open-Meteo (https://open-meteo.com/en/docs/historical-weather-api), CC BY 4.0
 
+- LCDB v6.0 — Land Cover Database version 6.0, Mainland New Zealand by Manaaki Whenua – Landcare Research — LRIS Portal (https://lris.scinfo.org.nz/layer/123148-lcdb-v60-land-cover-database-version-60-mainland-new-zealand/), CC BY 4.0. Licence verified 2026-08-15 directly against the layer's own Koordinates API metadata (`https://lris.scinfo.org.nz/services/api/v1/layers/123148/` → `license.title` = "Creative Commons Attribution 4.0 International", `license.type` = "cc-by", `license.version` = "4.0"; human-readable at https://lris.scinfo.org.nz/license/attribution-4-0-international/) — not read off a summary or assumed to match the S-map layers above it.
+
 - Cat icon (GitHub) by Dave Gandy — Flaticon (https://www.flaticon.es/iconos-gratis/gato)
 
 - LinkedIn icon by Magnific — Flaticon (https://www.flaticon.es/iconos-gratis/linkedin)
@@ -32,7 +34,14 @@ Format:
 
 ## Status
 
-LINZ, S-map, and Open-Meteo entries logged (six sources total), plus
-three dashboard footer icons (GitHub, LinkedIn, kiwifruit — nine entries
-total). NIWA was evaluated and dropped in favour of Open-Meteo (see
-`docs/data_sources.md`) — no NIWA attribution needed.
+LINZ, S-map, Open-Meteo, and LCDB entries logged (seven sources total),
+plus three dashboard footer icons (GitHub, LinkedIn, kiwifruit — ten
+entries total). NIWA was evaluated and dropped in favour of Open-Meteo
+(see `docs/data_sources.md`) — no NIWA attribution needed.
+
+LCDB was added 2026-08-15 — it was actively used (`src/ingest_soil_lcdb.py`,
+`terroir.db`'s `parcel_attributes.lcdb_class_2023`) but missing from this
+log despite being logged alongside the same four S-map layers it's
+fetched next to in code. Its licence (CC BY 4.0) is now confirmed
+directly against the layer's own API metadata, not assumed to match
+S-map's — see the log entry above.
