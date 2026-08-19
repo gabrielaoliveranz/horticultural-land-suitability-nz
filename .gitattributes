@@ -1,2 +1,11 @@
+# Normalises every text file to LF in the git object database, regardless
+# of what line endings a contributor's OS/editor/git config writes to
+# disk locally.
+* text=auto eol=lf
+
+# True binaries — never text-normalise these, regardless of extension
+# detection.
+*.png binary
+
 data/processed/terroir.db filter=lfs diff=lfs merge=lfs -text
 data/processed/parcels_linz.geojson filter=lfs diff=lfs merge=lfs -text
