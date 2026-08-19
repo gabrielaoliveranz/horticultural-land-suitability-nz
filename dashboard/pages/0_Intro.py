@@ -65,14 +65,16 @@ accent_divider()
 
 st.markdown("### What makes this different")
 st.markdown(
-    "Terroir is built entirely on official New Zealand government data — "
-    "LINZ cadastral parcels, S-map soil data, LCDB land cover, and "
-    "Open-Meteo climate records — spatially joined and scored at the "
-    "individual parcel level. Every data-quality issue encountered along "
-    "the way, including coordinate system mismatches, macron-spelling "
-    "inconsistencies, a non-unique join key, and a scoring boundary "
-    "error, is documented and resolved transparently, with a full audit "
-    "trail in the project's public repository."
+    "Terroir is built entirely on official, openly licensed data — LINZ "
+    "cadastral parcels (Land Information New Zealand), S-map soil data "
+    "and LCDB land cover (Manaaki Whenua – Landcare Research), and "
+    "Open-Meteo climate records (ERA5 reanalysis) — spatially joined and "
+    "scored at the individual parcel level. Every data-quality issue "
+    "encountered along the way, including coordinate system mismatches, "
+    "a macron-encoding mismatch that silently excluded an entire "
+    "district, a non-unique join key, and a scoring boundary error, is "
+    "documented and resolved transparently, with a full audit trail in "
+    "the project's public repository."
 )
 
 accent_divider()
