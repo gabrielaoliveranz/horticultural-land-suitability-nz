@@ -1,5 +1,7 @@
 # Terroir
 
+![Terroir suitability map dashboard](dashboard/assets/preview/hero.png)
+
 [![Tests](https://github.com/gabrielaoliveranz/horticultural-land-suitability-nz/actions/workflows/tests.yml/badge.svg)](https://github.com/gabrielaoliveranz/horticultural-land-suitability-nz/actions/workflows/tests.yml)
 
 Geospatial land-suitability analysis for Bay of Plenty horticulture — the sister project to [Apophenia](https://apophenia-nz.vercel.app) (Gabriela Olivera's kiwifruit export risk simulator).
@@ -46,6 +48,7 @@ horticultural-land-suitability-nz/
 │   ├── theme.py                  # design tokens only, no Streamlit calls
 │   ├── components.py             # shared rendering (footer, cards, callouts…)
 │   ├── assets/icons/              # footer icons (GitHub, LinkedIn, kiwifruit)
+│   ├── assets/preview/hero.png    # this README's cover image (Suitability Map page)
 │   ├── pages/                    # 0_Intro.py … 5_Climate_Risk.py (6 pages, all built)
 │   └── README.md
 │
