@@ -1,0 +1,7 @@
+subzone,lat,lon,frost_days,frost_days_per_year,chill_hours_annual_avg,heavy_rain_days,heavy_rain_days_per_year
+Katikati,-37.54856658,175.9261779,0,0,208.4,175,17.5
+Opotiki,-38.01586801,177.2756511,0,0,282.6,233,23.3
+Pongakawa,-37.86944016,176.4748632,0,0,452,178,17.8
+Tauranga,-37.73711675,176.1402109,0,0,338.8,180,18
+Te Puke,-37.80990515,176.3096854,2,0.2,434.7,197,19.7
+Whakatane District,-38.077226,176.869339,100,10,1068.1,203,20.3
