@@ -18,14 +18,14 @@ Parkland/Open Space" — land that's already built on, not genuine
 horticultural expansion land. This was flagged as a gap the first time
 candidates were sampled for external verification (2 of that sample's
 Katikati rows were exactly this). It was never fixed upstream, so this
-page excludes those 2 classes itself: 1,662 of 13,040 candidates
-(12.7%) are dropped, leaving 11,378 shown here. This is reasonable for
+page excludes those 2 classes itself: 556 of 9,557 candidates
+(5.8%) are dropped, leaving 9,001 shown here. This is reasonable for
 now but is a display-layer patch, not a real fix — logged in
 docs/methodology.md as a refinement to push back into
 regional_summary_expansion.py itself, so every consumer of
 expansion_candidates gets the correct set, not just this page.
 
-LCDB class colours are a functional placeholder: 22 distinct classes
+LCDB class colours are a functional placeholder: 21 distinct classes
 remain after the urban exclusion, far more than the confirmed 5-colour
 brand palette was ever meant to cover (that palette is for suitability
 levels). Colours here are an evenly-spaced hue rotation, not a styled
@@ -38,8 +38,8 @@ for why and 2_Suitability_Map.py's docstring for the fuller derivation,
 not repeated here since it's no longer this page's own cost to justify).
 
 Empty-combination handling: subzone x LCDB class is filtered as one
-combination, and most combinations are legitimately empty (69 of 132
-possible pairs — smaller subzones like Opotiki only have 3 of the 22
+combination, and most combinations are legitimately empty (67 of 126
+possible pairs — smaller subzones like Opotiki only have 2 of the 21
 classes present at all). An empty `view` previously crashed pydeck
 ("Invalid LngLat object: (NaN, NaN)") because
 `GeoDataFrame.total_bounds()` on zero rows returns all-NaN, which flowed

@@ -243,8 +243,9 @@ def to_geojson(gdf):
 st.title("Suitability Map")
 st.caption(
     "Parcel-level suitability scores, colour-coded by rating. Only parcels "
-    "with a complete soil-data match are shown; 1,343 parcels without an "
-    "S-map record are excluded from this view."
+    "with a complete soil-data match are shown; parcels with no S-map or "
+    "LCDB match, road or waterway features, or duplicate title records "
+    "over the same land are excluded upstream and don't appear here."
 )
 
 subzone = st.selectbox("Subzone", SUBZONE_OPTIONS, index=SUBZONE_OPTIONS.index(DEFAULT_SUBZONE))
