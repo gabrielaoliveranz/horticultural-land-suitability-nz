@@ -77,6 +77,15 @@ horticultural-land-suitability-nz/
 │   ├── assets/                   # placeholder, unused
 │   └── README.md
 │
+├── powerbi/
+│   ├── Terroir_Land_Suitability_Dashboard.pbix  # Power BI Desktop file,
+│   │                              # built on data/powerbi_export/*.csv
+│   ├── terroir_dashboard_overview.png, terroir_dashboard_map_detail.png,
+│   │   terroir_dashboard_scatter.png, terroir_dashboard_climate_table.png
+│   │                              # reference screenshots — not yet linked
+│   │                              # from any doc
+│   └── NOTAS_conexion_y_refresh.md  # Power BI Service refresh/connection notes
+│
 ├── notebooks/                    # placeholder, unused — no notebooks created
 ├── sql/                          # placeholder, unused — no schema/queries written
 └── tests/                        # pytest unit tests for src/ scoring logic
