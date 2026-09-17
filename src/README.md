@@ -126,6 +126,24 @@ their own:
   429, and HTTP 5xx; fails immediately on any other 4xx. See
   `docs/methodology.md`, "Retry policy for API ingestion".
 
+Plus one standalone companion script, run manually rather than as
+part of the pipeline order above because it needs outbound internet
+access this environment's development shell doesn't have:
+
+- `fetch_whakatane_climate.py` — one-off companion to
+  `ingest_climate_risk.py`, computing the same frost/chill/heavy-rain
+  metrics for Whakatane District (not one of the 5 named Apophenia
+  subzones, so never covered by that script's own run). Imports
+  `fetch_hourly_weather()` and `compute_climate_risk()` directly from
+  `ingest_climate_risk.py` rather than duplicating them, so it can't
+  drift out of sync with that script's methodology. Appends a
+  "Whakatane District" row to
+  `data/powerbi_export/subzone_climate_risk.csv` — not the
+  `subzone_climate_risk` table in `terroir.db`, which is keyed on the
+  5 named subzones only. Run with
+  `python src/fetch_whakatane_climate.py` from a normal terminal with
+  internet access.
+
 All ingestion, joining, scoring, regional-summary/expansion,
 cross-project comparison, and Power BI export work (Fase 2-4) is in
 place. Fase 5 (Streamlit dashboard) is built — 6 pages, see

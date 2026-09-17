@@ -37,9 +37,12 @@ horticultural-land-suitability-nz/
 │   │                              # for the full run order (no numeric prefixes,
 │   │                              # so the order isn't visible from filenames alone)
 │   ├── explore_volumes.py     # exploratory only — no DB writes
-│   ├── ingest_linz.py, ingest_soil_lcdb.py, ingest_subzones.py, calculate_score.py,
-│   │   subzone_summary.py, cross_project_comparison.py, ingest_climate_risk.py,
+│   ├── ingest_linz.py, ingest_soil_lcdb.py, ingest_subzones.py,
+│   │   ingest_parcel_groups.py, calculate_score.py, subzone_summary.py,
+│   │   cross_project_comparison.py, ingest_climate_risk.py,
 │   │   regional_summary_expansion.py
+│   ├── export_parcel_scores_for_map.py, export_powerbi_summaries.py  # Power BI CSV exports
+│   ├── fetch_whakatane_climate.py  # standalone, needs internet — see src/README.md
 │   ├── config.py, api_retry.py   # shared utilities, imported not run
 │   └── README.md
 │
@@ -57,6 +60,7 @@ horticultural-land-suitability-nz/
 │   │                              # data is fetched live via API each run,
 │   │                              # nothing cached to disk
 │   ├── processed/                # parcels_linz.geojson, terroir.db (committed via Git LFS — see below)
+│   ├── powerbi_export/           # CSV exports for Power BI Service — see src/export_*.py
 │   └── external/                 # dim_corridor_apophenia.csv (Apophenia's synthetic corridor data)
 │
 ├── docs/
@@ -88,11 +92,14 @@ horticultural-land-suitability-nz/
 | `ingest_linz.py` | LINZ WFS layer 122657, CQL-filtered (4 TAs, area > 10,000 m²) | `data/processed/parcels_linz.geojson` — 22,834 parcels, geometry pre-simplified (~5m tolerance) |
 | `ingest_soil_lcdb.py` | Parcel centroids + 4 S-map WFS layers + LCDB WFS layer 123148 | `terroir.db`: `parcel_attributes` (soil_depth, soil_texture, soil_drainage, soil_order, lcdb_class_2023) |
 | `ingest_subzones.py` | Parcel centroids + LINZ layer 113764 (NZ Suburbs and Localities) | `terroir.db`: `parcel_attributes.subzone` column added |
+| `ingest_parcel_groups.py` | `parcels_linz.geojson` (read directly, not the database) | `terroir.db`: `parcel_attributes.source_category`, `.is_land_parcel`, `.parcel_group_id`, `.title_count` columns added — see `docs/methodology.md` |
 | `calculate_score.py` | `parcel_attributes` | `terroir.db`: `parcel_scores` — 16,072 distinct land parcels scored (road/hydro, null-soil rows, and duplicate legal-title records excluded — see `docs/methodology.md`) |
 | `subzone_summary.py` | `parcel_scores` + `parcel_attributes.subzone` | `terroir.db`: `subzone_summary` — 5 named Apophenia subzones |
 | `cross_project_comparison.py` | `subzone_summary` + `data/external/dim_corridor_apophenia.csv` | `terroir.db`: `cross_project_comparison` |
 | `ingest_climate_risk.py` | One representative centroid per subzone + Open-Meteo Historical Weather API (2016–2025) | `terroir.db`: `subzone_climate_risk` |
 | `regional_summary_expansion.py` | `parcel_scores` (region-wide) + `parcel_attributes.lcdb_class_2023` | `terroir.db`: `suitability_levels_summary` + `expansion_candidates` |
+| `export_parcel_scores_for_map.py` | `parcel_scores` + `parcels_linz.geojson` | `data/powerbi_export/parcel_scores_for_map.csv` |
+| `export_powerbi_summaries.py` | `suitability_levels_summary`, `subzone_summary`, `expansion_candidates`, `parcel_attributes.territorial_authority` | `data/powerbi_export/` — remaining Power BI CSVs |
 
 ## Local setup / How to run
 
