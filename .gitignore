@@ -10,3 +10,6 @@ data/raw/*/*
 !data/raw/*/README.md
 # Personal working notes, not for the public repo
 powerbi/NOTAS_conexion_y_refresh.md
+
+# Backups from the parcel-dedup fix session, not for git
+*.bak-preparceldedup

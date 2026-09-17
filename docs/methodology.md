@@ -133,8 +133,8 @@ to revision as a future refinement.
 
 ### Score distribution and suitability levels
 
-The scoring formula produces a right-skewed distribution: 46.7% of
-scored parcels (10,046 of 21,491) score exactly 10.0. This reflects the
+The scoring formula produces a right-skewed distribution: 46.4% of
+scored parcels (7,454 of 16,072) score exactly 10.0. This reflects the
 underlying geology of Bay of Plenty (soil_order ~65.9% Allophanic/Pumice,
 soil_texture ~64.2% Loamy, soil_drainage 86.5% Well drained, soil_depth
 94.1% Deep) rather than a modelling error — most parcels stack every
@@ -157,7 +157,7 @@ and their geographic concentration by subzone, not a single ranked list.
 placing a score of exactly 5.0 in "Marginal" and exactly 8.0 in "Good",
 both contradicting the ranges stated above (5.0 belongs in Good, 8.0 in
 Excellent). This silently misclassified any parcel that scored exactly
-on a tier boundary — 4,174 of 21,491 parcels (19.4%) scored exactly 8.0
+on a tier boundary — 3,481 of 16,072 parcels (21.7%) scored exactly 8.0
 and were wrongly counted as "Good". It was caught because
 `expansion_candidates` (filtered on the literal `suitability_score >=
 8.0`) came out *larger* than the "Excellent" count reported by
@@ -166,16 +166,17 @@ since candidates are a subset of the Excellent tier. Fixed by binning
 with `right=False` instead, which correctly makes both the 5.0 and 8.0
 boundaries left-inclusive. All figures in this document are post-fix.
 
-**Final figures (4 TAs, post boundary-fix), region-wide, 21,491 scored
-parcels:**
+**Final figures (4 TAs, post boundary-fix and post parcel-grouping
+fix — see "Physical-parcel grouping" below), region-wide, 16,072
+scored parcels:**
 
 | Level | Parcels | % |
 |---|---|---|
-| Excellent | 16,414 | 76.4% |
-| Good | 3,890 | 18.1% |
-| Marginal | 1,187 | 5.5% |
+| Excellent | 12,602 | 78.4% |
+| Good | 2,558 | 15.9% |
+| Marginal | 912 | 5.7% |
 
-(Full detail, including the 5-named-subzone view and its 88.9%
+(Full detail, including the 5-named-subzone view and its 88.1%
 weighted-average Excellent share, is in "Regional summary and expansion
 candidates" below.)
 
@@ -193,10 +194,10 @@ breakdown above to the full dataset (not just parcels within Apophenia's
 `subzone_summary.py`) and answers business question 2.
 
 **Business question 1, region-wide (`suitability_levels_summary`):** of
-21,491 scored parcels — Excellent 16,414 (76.4%), Good 3,890 (18.1%),
-Marginal 1,187 (5.5%). This is actually *less* skewed toward "Excellent"
+16,072 scored parcels — Excellent 12,602 (78.4%), Good 2,558 (15.9%),
+Marginal 912 (5.7%). This is actually *less* skewed toward "Excellent"
 than the 5-named-subzone view (`subzone_summary`, weighted average
-88.9% Excellent across Tauranga/Te Puke/Pongakawa/Katikati/Opotiki) — the
+88.1% Excellent across Tauranga/Te Puke/Pongakawa/Katikati/Opotiki) — the
 region-wide figure is pulled down by Whakatane District, which sits
 almost entirely outside the 5 named subzones and has a more varied soil
 profile than the tightly-curated Apophenia footprint.
@@ -206,15 +207,15 @@ parcels with `suitability_score >= 8.0` (Excellent tier) that are NOT
 already classified as `lcdb_class_2023 = 'Orchard, Vineyard or Other
 Perennial Crop'` — good-to-excellent soil with no current orchard/
 vineyard/perennial-crop use, i.e. real expansion candidates rather than
-existing orchards. Result: **13,040 parcels** (79.4% of all 16,414
+existing orchards. Result: **9,557 parcels** (75.8% of all 12,602
 Excellent-tier parcels) — most excellent-soil land in the region is not
 currently under orchard/vineyard/perennial-crop use, which tracks with
 LCDB's own region-wide finding that only ~3% of land cover falls in that
-class (see "Parcel selection" above). Breakdown by subzone: 10,203 fall
-outside the 5 named subzones, then Tauranga 1,973, Te Puke 406,
-Pongakawa 251, Katikati 166, Opotiki 41.
+class (see "Parcel selection" above). Breakdown by subzone: 7,866 fall
+outside the 5 named subzones, then Tauranga 1,069, Te Puke 326,
+Pongakawa 207, Katikati 55, Opotiki 34.
 
-Parcels with a NULL `lcdb_class_2023` (59 of 22,834 overall — no LCDB
+Parcels with a NULL `lcdb_class_2023` (37 of 19,968 land parcels — no LCDB
 match) are included as candidates, not excluded: they are not confirmed
 orchard, and excluding them would silently drop otherwise-qualifying
 parcels because of an LCDB coverage gap rather than because they're
@@ -226,14 +227,14 @@ actually disqualified. `expansion_candidates` stores `source_id` only
 `expansion_candidates` only excludes the literal orchard class; it does
 not exclude land that's already built on. `lcdb_class_2023 = 'Built-up
 Area (settlement)'` and `'Urban Parkland/Open Space'` both pass the
-current filter, since neither is "orchard" — 1,662 of the 13,040
-candidates (12.7%) are urban/settlement land, not genuine horticultural
+current filter, since neither is "orchard" — 556 of the 9,557
+candidates (5.8%) are urban/settlement land, not genuine horticultural
 expansion land. First noticed when sampling candidates for external
 verification (2 of that Katikati sample's rows were exactly this).
 
 **Interim fix:** `dashboard/pages/3_Expansion_Candidates.py` excludes
 these 2 classes at the display layer, dropping the count shown there to
-11,378. This is reasonable for now but is a patch, not a real fix — it
+9,001. This is reasonable for now but is a patch, not a real fix — it
 only helps consumers of that one dashboard page.
 
 **Refinement to do:** exclude the same 2 classes (or a broader
@@ -246,16 +247,24 @@ filter.
 
 ### Handling unmatched parcels (nulls)
 
-1,343 of 22,834 parcels (5.9%) have no S-map match (soil_depth,
-soil_texture, soil_drainage, soil_order all null); 60 (0.3%) have no
-LCDB match. These parcels fall outside S-map's/LCDB's mapped coverage —
-typically coastal/rural edge cases, not a data quality error (see
-docs/data_sources.md ingestion notes). The unmatched rate has risen in
-stages as scope expanded: 0.8% (2 TAs) → 5.5% (3 TAs, once Opotiki
-District's more remote/coastal terrain was correctly included) → 5.9%
-(4 TAs, with Whakatane District added) — each addition has pulled in
-land further from the original Tauranga/Western Bay urban-fringe core,
-where S-map coverage is most complete.
+1,009 of 19,968 land parcels (5.1%) have no S-map match (soil_depth,
+soil_texture, soil_drainage, soil_order all null); 37 (0.2%) have no
+LCDB match — both now computed over land parcels only
+(`is_land_parcel` from `ingest_parcel_groups.py`), excluding the
+roads/hydro features that CQL_FILTER never screened out (see
+"Physical-parcel grouping" below). These parcels fall outside
+S-map's/LCDB's mapped coverage — typically coastal/rural edge cases,
+not a data quality error (see docs/data_sources.md ingestion notes).
+The unmatched rate had risen in stages as scope expanded, on the
+older all-raw-features basis (roads/hydro not yet separated out):
+0.8% (2 TAs) → 5.5% (3 TAs, once Opotiki District's more
+remote/coastal terrain was correctly included) → 5.9% (4 TAs, with
+Whakatane District added, matching the 1,343 of 22,834 figure this
+section used to lead with) — each addition has pulled in land
+further from the original Tauranga/Western Bay urban-fringe core,
+where S-map coverage is most complete. Not directly comparable to
+the 5.1% land-only figure above, which uses a narrower, more
+correct denominator.
 
 Decision: parcels with any null soil attribute are excluded from the
 suitability score entirely, not assigned a default/imputed value.
@@ -311,6 +320,92 @@ scenarios and never included a Whakatāne corridor, so no cross-project
 comparison is possible for that district. This is the reason `n=5`
 above covers only the original 5 named subzones, not all 4 territorial
 authorities Terroir now scores.
+
+---
+
+## Physical-parcel grouping: road/hydro exclusion and multi-title collapse
+
+**Why:** while building a Power BI dashboard from
+`parcel_scores_for_map.csv`, coordinate-level duplicate checking found
+708 unique coordinates repeated across 3,637 rows (2,929 "excess" rows
+above one-per-coordinate), the largest group being 280 rows at one
+coordinate, identical on every soil/suitability attribute but with a
+different `source_id` each. Checking `parcels_linz.geojson` directly
+(not the DB) found the real cause: LINZ layer 122657 mixes true land
+parcels (`source` = "NZ Primary Parcels", plus its "- Road" and
+"- Hydro" variants, which `ingest_linz.py`'s CQL_FILTER never screens
+out — it only filters on territorial_authority and area) with legal
+title/ownership records (`source` = "NZ Property Titles", "NZ Unit of
+Property") that coincide with, rather than describe separate, the
+underlying parcel's boundary whenever land carries a cross lease, unit
+title, life estate, or "Supplementary Record Sheet" correction record.
+Confirmed empirically: of 22,834 raw features, "NZ Primary Parcels"
+(and its Road/Hydro variants) never share a geometry with another row —
+only the two title-record sources ever do — and no duplicate-geometry
+group is 100% identical across every column (only the location-derived
+ones are), which rules out a re-fetched-the-same-row bug.
+
+**Fix:** `src/ingest_parcel_groups.py` (new) flags `is_land_parcel =
+False` for the Road/Hydro sources, and assigns a `parcel_group_id` +
+`title_count` to every row sharing an exact geometry — safe as an
+exact, not fuzzy, match because `ingest_linz.py` already snaps every
+geometry to a 1e-6 degree precision grid (see "Geometry simplification
+moved to ingestion" below). `calculate_score.py` now excludes non-land
+rows before scoring, and collapses each parcel_group_id to a single row
+after scoring, keeping `title_count` on the surviving row so the fact
+that a parcel carries several titles isn't lost, just no longer
+double-counted as separate parcels. `parcel_attributes` is unchanged at
+the row level — every raw title record is still queryable there — only
+`parcel_scores` and everything built from it changed shape.
+
+**Data-integrity bug, not a coverage gap:** per this document's own
+"stop and ask before modifying already-committed files" standard, the
+road/hydro exclusion and the multi-title collapse (rather than simply
+discarding the duplicate rows) were both confirmed with Gaby, in chat,
+before `ingest_parcel_groups.py` was written.
+
+**Ripple, diffed exactly (pre-fix backup vs. current `terroir.db`):**
+
+- `parcel_attributes`: row count unchanged (22,834) — 4 columns added
+  (`source_category`, `is_land_parcel`, `parcel_group_id`,
+  `title_count`), no existing values touched.
+- `calculate_score.py` / `parcel_scores`: 21,491 → 16,072 rows. Of the
+  22,834 raw rows, 2,866 are road/hydro (excluded before scoring,
+  leaving 19,968 land rows); of those, 1,009 (5.1%) are excluded for a
+  null soil attribute (see "Handling unmatched parcels" above, now
+  reported on this same land-only basis) leaving 18,959 scored rows,
+  then 2,887 excess title-record rows are collapsed away to reach
+  16,072 distinct physical parcels.
+- `suitability_levels_summary`: Excellent 16,414 (76.4%) → 12,602
+  (78.4%); Good 3,890 (18.1%) → 2,558 (15.9%); Marginal 1,187 (5.5%) →
+  912 (5.7%).
+- `subzone_summary`: parcel counts and mean_score shifted slightly in
+  every named subzone as duplicate title records (and any road/hydro
+  rows that had leaked into a subzone) were removed — e.g. Katikati
+  mean_score 9.65 → 9.55, Opotiki 7.18 → 7.11. Ranking order across
+  subzones is unchanged.
+- `expansion_candidates`: 13,040 → 9,557 total. The urban/settlement
+  contamination noted above (see "Known gap ... urban/settlement
+  classes") dropped from 1,662 (12.7%) to 556 (5.8%) of candidates —
+  much of that contamination turns out to have been duplicate title
+  records over the same urban land, not 1,662 distinct urban parcels.
+- `cross_project_comparison`: correlation coefficients moved by
+  roughly a hundredth to three hundredths (e.g.
+  psa_incidence_historical r = -0.85 → -0.875, distance_port_km
+  r = -0.52 → -0.57, base_risk_weight r = 0.16 → 0.17) — same
+  direction and magnitude throughout, business question 3's conclusion
+  is unchanged.
+
+**Not yet done:** `ingest_linz.py`'s own `CQL_FILTER` is deliberately
+left unchanged — whether this WFS even supports filtering on `source`
+server-side is unconfirmed, and this document's own "never hardcode
+field names or category codes without confirming against a live
+sample" standard cuts against guessing at that syntax from here. Roads
+and hydro features are still fetched into `parcels_linz.geojson` on a
+fresh pipeline run; they're just correctly excluded downstream from
+`ingest_parcel_groups.py` onward. Confirming the CQL syntax against a
+live call and filtering at the source would be a tidy-up, not a
+correctness fix.
 
 ---
 

@@ -11,10 +11,14 @@ Coloured by suitability level (Excellent/Good/Marginal) via a pydeck
 GeoJsonLayer, with a subzone filter (5 named Apophenia subzones + "All")
 to narrow the view and keep rendering fast.
 
-Only scored parcels are shown (inner join with parcel_scores) — the
-1,343 parcels with no S-map match have no suitability_score to colour by,
-consistent with every other scoring page. Functional, minimal styling
-for now, same as 0_Intro.py / 1_Overview.py.
+Only scored parcels are shown (inner join with parcel_scores) —
+parcels with no S-map or LCDB match, road/hydro features, and
+duplicate legal-title records over the same physical land are all
+excluded upstream and simply don't appear here, consistent with
+every other scoring page (see docs/methodology.md, "Handling
+unmatched parcels (nulls)" and "Physical-parcel grouping").
+Functional, minimal styling for now, same as 0_Intro.py /
+1_Overview.py.
 
 Level colours (colorblind-safe fix, replacing the original green/gold/
 red scheme): an Impeccable accessibility audit ran an actual deuteranopia/

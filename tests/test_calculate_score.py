@@ -20,6 +20,8 @@ from calculate_score import (
     SOIL_ORDER_POINTS,
     SOIL_TEXTURE_POINTS,
     compute_scores,
+    dedupe_by_parcel_group,
+    exclude_non_land,
     exclude_unscoreable,
     map_points,
 )
@@ -93,3 +95,56 @@ def test_compute_scores_matches_hand_calculated_weighted_result() -> None:
     result = compute_scores(df)
 
     assert result.loc[0, "suitability_score"] == pytest.approx(5.2)
+
+
+def test_exclude_non_land_partitions_without_losing_rows() -> None:
+    df = pd.DataFrame({
+        "source_id": [1, 2, 3],
+        "is_land_parcel": [True, False, True],
+    })
+
+    land, non_land = exclude_non_land(df)
+
+    assert sorted(land["source_id"].tolist()) == [1, 3]
+    assert non_land["source_id"].tolist() == [2]
+    assert len(land) + len(non_land) == len(df)
+
+
+def test_exclude_non_land_handles_sqlite_integer_booleans() -> None:
+    # is_land_parcel round-trips through SQLite as 0/1, not True/False.
+    df = pd.DataFrame({"source_id": [1, 2], "is_land_parcel": [1, 0]})
+
+    land, non_land = exclude_non_land(df)
+
+    assert land["source_id"].tolist() == [1]
+    assert non_land["source_id"].tolist() == [2]
+
+
+def test_dedupe_by_parcel_group_keeps_one_row_per_group() -> None:
+    df = pd.DataFrame({
+        "source_id": ["b", "a", "c"],
+        "parcel_group_id": ["g1", "g1", "g2"],
+        "title_count": [2, 2, 1],
+        "suitability_score": [7.0, 7.0, 9.0],
+    })
+
+    result = dedupe_by_parcel_group(df)
+
+    assert len(result) == 2
+    # Deterministic: lexicographically smallest source_id survives.
+    g1_row = result.loc[result["parcel_group_id"] == "g1"].iloc[0]
+    assert g1_row["source_id"] == "a"
+    assert g1_row["title_count"] == 2
+
+
+def test_dedupe_by_parcel_group_leaves_singletons_untouched() -> None:
+    df = pd.DataFrame({
+        "source_id": ["a", "b"],
+        "parcel_group_id": ["g1", "g2"],
+        "title_count": [1, 1],
+        "suitability_score": [7.0, 9.0],
+    })
+
+    result = dedupe_by_parcel_group(df)
+
+    assert len(result) == 2

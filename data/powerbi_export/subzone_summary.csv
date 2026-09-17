@@ -1,6 +1,6 @@
-subzone,parcel_count,mean_score,Marginal_pct,Good_pct,Excellent_pct
-Tauranga,2335,9.53,1.5,8.2,90.3
-Te Puke,1020,8.04,2.6,6.6,90.8
-Pongakawa,399,7.55,9.0,11.0,79.9
-Katikati,271,9.65,0.7,7.7,91.5
-Opotiki,78,7.18,14.1,29.5,56.4
+﻿subzone,parcel_count,mean_score,Marginal_pct,Good_pct,Excellent_pct
+Tauranga,1343,9.46,2.0,9.3,88.7
+Te Puke,883,8.05,2.2,6.6,91.3
+Pongakawa,326,7.68,6.7,10.1,83.1
+Katikati,149,9.55,1.3,9.4,89.3
+Opotiki,66,7.11,16.7,27.3,56.1
